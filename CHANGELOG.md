@@ -2,6 +2,15 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.1.1] - 2026-09-29
+
+### 추가
+
+- macOS 바로가기 설정에 모찌 크기 슬라이더 추가
+- 100% ~ 250%, 25% 단위로 즉시 적용 및 자동 저장
+- 재실행 시 크기 복원, 확대 시 화면 경계와 팔레트 위치 반영
+- 맥 기본 크기 100% 유지, Windows 배포 파일은 2.1.0 유지
+
 ## [2.1.0] - 2026-09-29
 
 ### 추가
@@ -54,3 +63,5 @@
 [2.0.1]: https://github.com/chani337/desktop_mochi/releases/tag/v2.0.1
 
 [2.1.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.0
+
+[2.1.1]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.1

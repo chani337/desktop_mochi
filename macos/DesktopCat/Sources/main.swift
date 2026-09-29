@@ -250,6 +250,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var cat: CatView!
     var menuPanel: NSPanel?
     var settings: NSWindow?
+    var sizeLabel: NSTextField?
+    var petScale = 100
+    let sizeDefaults = CommandLine.arguments.contains("--size-test") ? UserDefaults(suiteName: "local.desktopcat.size-tests")! : UserDefaults.standard
+
+    func savedPetScale() -> Int {
+        let value = sizeDefaults.integer(forKey: "petScalePercent")
+        return (100...250).contains(value) && value % 25 == 0 ? value : 100
+    }
+
+    func applyPetScale(_ value: Int) {
+        guard (100...250).contains(value), value % 25 == 0 else { return }
+        let reopen = menuPanel != nil
+        closeMenu()
+        let old = pet.frame
+        let factor = CGFloat(value) / 100
+        var frame = NSRect(x: old.midX-57*factor/2, y: old.minY, width: 57*factor, height: 60*factor)
+        if let area = (pet.screen ?? NSScreen.main)?.visibleFrame {
+            frame.origin.x = max(area.minX, min(frame.minX, area.maxX-frame.width))
+            frame.origin.y = max(area.minY, min(frame.minY, area.maxY-frame.height))
+        }
+        pet.setFrame(frame, display: true)
+        cat.frame = NSRect(origin: .zero, size: frame.size)
+        cat.bounds = NSRect(x: 0, y: 0, width: 170, height: 180)
+        cat.needsDisplay = true
+        petScale = value
+        sizeDefaults.set(value, forKey: "petScalePercent")
+        sizeLabel?.stringValue = "모찌 크기 · \(value)%"
+        if reopen { toggleMenu() }
+    }
+
+    @objc func changePetSize(_ sender: NSSlider) {
+        let value = Int((sender.doubleValue / 25).rounded()) * 25
+        sender.integerValue = value
+        applyPetScale(value)
+    }
+
+    func testPetSize() {
+        defer { sizeDefaults.removePersistentDomain(forName: "local.desktopcat.size-tests") }
+        let original = pet.frame
+        showSettings()
+        guard let slider = settings?.contentView?.subviews.compactMap({ $0 as? NSSlider }).first else { fatalError("Missing size slider") }
+        slider.integerValue = 250; changePetSize(slider)
+        precondition(petScale == 250 && savedPetScale() == 250)
+        precondition(abs(pet.frame.width-142.5) < 1 && pet.frame.height == 150)
+        precondition(cat.bounds.size == NSSize(width: 170, height: 180))
+        precondition(abs(pet.frame.minY-original.minY) < 1)
+        applyPetScale(999); precondition(petScale == 250)
+        toggleMenu(); precondition(menuPanel != nil)
+        applyPetScale(150); precondition(menuPanel != nil && savedPetScale() == 150)
+        applyPetScale(100); precondition(pet.frame.size == NSSize(width: 57, height: 60))
+        print("SIZE TEST PASS: slider, bounds, saved setting, invalid size, palette")
+    }
+
     var status: NSStatusItem!
     var timer: Timer?
     var shortcuts: [Shortcut] = []
@@ -302,9 +355,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cat.onGestureEnd = { [weak self] point in self?.finishPaletteSelection(at: point) }
         cat.onDropURL = { [weak self] url in self?.addDroppedShortcut(url) }
         if let screen = NSScreen.main { pet.setFrameOrigin(NSPoint(x: screen.visibleFrame.maxX-240, y: screen.visibleFrame.minY+40)) }
+        petScale = savedPetScale()
+        applyPetScale(petScale)
         pet.orderFrontRegardless()
         setupStatus()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
+        if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--snapshot") { snapshot(); NSApp.terminate(nil) }
         if CommandLine.arguments.contains("--settings") { showSettings() }
         if CommandLine.arguments.contains("--timer") { showFocusTimer() }
@@ -553,12 +609,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showSettings() {
         closeMenu()
         if let settings { settings.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 460), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 560), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         w.title = "모찌 · 바로가기 설정"; w.isReleasedWhenClosed = false; w.center()
         let view = w.contentView!
         func label(_ text: String, _ frame: NSRect, _ size: CGFloat = 13) {
             let l = NSTextField(wrappingLabelWithString: text); l.font = .systemFont(ofSize: size); l.frame = frame; view.addSubview(l)
         }
+        let sizeTitle = NSTextField(labelWithString: "모찌 크기 · \(petScale)%")
+        sizeTitle.font = .systemFont(ofSize: 17, weight: .semibold)
+        sizeTitle.frame = NSRect(x: 25, y: 510, width: 400, height: 25)
+        view.addSubview(sizeTitle); sizeLabel = sizeTitle
+        let sizeSlider = NSSlider(value: Double(petScale), minValue: 100, maxValue: 250, target: self, action: #selector(changePetSize(_:)))
+        sizeSlider.numberOfTickMarks = 7; sizeSlider.allowsTickMarkValuesOnly = true; sizeSlider.isContinuous = true
+        sizeSlider.frame = NSRect(x: 25, y: 470, width: 765, height: 30)
+        sizeSlider.setAccessibilityLabel("모찌 크기")
+        view.addSubview(sizeSlider)
+        label("100% ~ 250% · 즉시 적용하고 자동 저장해요. 기존 크기는 100%예요.", NSRect(x: 25, y: 442, width: 770, height: 23))
         label("모찌의 바로가기", NSRect(x: 25, y: 402, width: 720, height: 30), 23)
         label("링크를 모찌 위에 놓아도 추가돼요. 여기서는 아이콘과 색을 바꾸고 화살표로 순서를 정할 수 있어요.", NSRect(x: 25, y: 362, width: 770, height: 35))
         label("이름", NSRect(x: 25, y: 335, width: 105, height: 20))

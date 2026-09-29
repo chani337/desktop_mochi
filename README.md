@@ -8,7 +8,7 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.1.0-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.1-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
@@ -75,9 +75,9 @@
 
 브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있습니다. 바로가기는 최대 **5개**까지 지원하며, Mac과 Windows의 설정은 각각 저장됩니다.
 
-### 모찌 크기 바꾸기 · Windows
+### 모찌 크기 바꾸기 · macOS / Windows
 
-캐릭터를 클릭한 뒤 **설정 → 모찌 크기** 슬라이더를 움직여 주세요. **100%부터 250%까지 25% 단위**로 조절하며, 변경 즉시 적용되고 자동 저장됩니다. 기본 크기는 **150%**입니다. 이전 버전에서 업데이트한 경우에도 크기 설정이 없으면 150%로 시작합니다.
+캐릭터를 클릭한 뒤 **설정 → 모찌 크기** 슬라이더를 움직여 주세요. **100%부터 250%까지 25% 단위**로 조절하며, 변경 즉시 적용되고 자동 저장됩니다. 기본 크기는 **맥 100% · 윈도우 150%**입니다. 맥은 기존 크기를 유지하며, 윈도우는 크기 설정이 없으면 150%로 시작합니다.
 
 ### 집중 타이머 맞추기
 
@@ -164,6 +164,13 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.1.1 · 2026.09.29 — macOS 크기 조절**
+
+- 맥 설정에서도 캐릭터 크기를 100% ~ 250%로 조절하고 자동 저장
+- 맥 기본 크기는 기존과 같은 100% 유지
+- Windows 다운로드는 크기 조절을 지원하는 기존 v2.1.0 유지
+
 
 **v2.1.0 · 2026.09.29 — Windows 크기 조절**
 

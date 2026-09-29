@@ -2,10 +2,10 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Not
 const fs = require('node:fs');
 const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
-const { validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
+const { petSize, resizedPetBounds, validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
 let pet, palette, prefs, tray, file, state, dragging, holding = false, highlighted = -1;
 let lastTouch = Date.now(), waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
-const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, duration:25, end:null };
+const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, scale:150, duration:25, end:null };
 const smoke = process.argv.includes('--smoke-test');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'mochi-smoke-profile'));
 if (!app.requestSingleInstanceLock()) { app.quit(); } else {
@@ -19,6 +19,7 @@ function load() {
   catch { state=structuredClone(defaults); }
   // Walking is opt-in each session, including upgrades with walking:true saved.
   state.walking=false;
+  try {petSize(state.scale);} catch {state.scale=150;}
   if (!Number.isFinite(state.duration)||state.duration<1||state.duration>1439) state.duration=25;
   if (!Number.isFinite(state.end) || state.end<=Date.now()) state.end=null;
 }
@@ -40,7 +41,7 @@ function createWindow(kind,width,height) {
   w.webContents.on('did-finish-load',send);
   return w;
 }
-function home() { const r=screen.getPrimaryDisplay().workArea; pet.setPosition(r.x+r.width-200,r.y+r.height-105); }
+function home() { const r=screen.getPrimaryDisplay().workArea,p=pet.getBounds(); pet.setPosition(Math.max(r.x,r.x+r.width-p.width-120),Math.max(r.y,r.y+r.height-p.height-19)); }
 function showMenu(open=true) {
   touch(); if(!open){palette?.hide();highlighted=-1;send();return;}
   const p=pet.getBounds(), r=screen.getDisplayMatching(p).workArea;
@@ -71,6 +72,7 @@ function authorize(event) { return [pet,palette,prefs].some(w=>w&&!w.isDestroyed
 function handle(name,fn) {ipcMain.handle('mochi:'+name,async(event,arg)=>{if(!authorize(event))throw new Error('Invalid sender');try{return {ok:true,data:await fn(arg,event)}}catch(error){return {ok:false,error:error.message}}});}
 function setupIPC() {
   handle('state',()=>publicState());
+  handle('size',value=>{petSize(value);const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;state.scale=value;pet.setBounds(resizedPetBounds(p,r,value));if(palette.isVisible())showMenu(true);save();send();});
   handle('save',rows=>{state.shortcuts=validateShortcuts(rows);save();send();});
   handle('open',index=>openShortcut(index));
   handle('menu',open=>showMenu(open));
@@ -94,13 +96,13 @@ function tick() {
   if(!pet||pet.isDestroyed())return;
   const now=Date.now();
   if(state.end && now>=state.end){state.end=null;touch();waveUntil=now+4000;save();pet.webContents.send('mochi:update',{complete:true,...publicState()});if(Notification.isSupported())new Notification({title:'모찌 · 집중 완료',body:'수고했어요! 잠깐 기지개를 켜요.'}).show();}
-  if(dragging){const c=screen.getCursorScreenPoint(),r=screen.getDisplayNearestPoint(c).workArea;pet.setPosition(Math.round(Math.max(r.x,Math.min(dragging.bounds.x+c.x-dragging.point.x,r.x+r.width-80))),Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-86))));}
+  if(dragging){const c=screen.getCursorScreenPoint(),r=screen.getDisplayNearestPoint(c).workArea;pet.setPosition(Math.round(Math.max(r.x,Math.min(dragging.bounds.x+c.x-dragging.point.x,r.x+r.width-dragging.bounds.width))),Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-dragging.bounds.height))));}
   else if(holding){const c=screen.getCursorScreenPoint(),r=palette.getBounds();highlighted=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);}
   else if(publicState().pose==='walking') {const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;let x=p.x+direction;if(x<r.x||x+p.width>r.x+r.width){direction*=-1;x=Math.max(r.x,Math.min(x,r.x+r.width-p.width));}pet.setPosition(x,Math.max(r.y,Math.min(p.y,r.y+r.height-p.height)));}
   if(++ticks%5===0){send();tray?.setToolTip(state.end?'모찌 · '+publicState().remaining:'모찌 · 바로가기와 집중 타이머');if(process.platform==='darwin')tray?.setTitle(state.end?publicState().remaining:'');}
 }
 async function start() {
-  load();setupIPC();pet=createWindow('pet',80,86);palette=createWindow('palette',340,220);home();
+  load();setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,220);home();
   pet.once('ready-to-show',()=>pet.showInactive());
   try {const icon=nativeImage.createFromPath(path.join(__dirname,'assets','mochi.png')).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('모찌');tray.on('double-click',()=>showSettings('timer'));updateTray();}catch(error){console.error('Tray:',error.message);}
   app.dock?.hide();setInterval(tick,40);
@@ -131,9 +133,16 @@ async function smokeTest() {
   showSettings('timer');await ready(prefs);
   if(!prefs.isVisible())await new Promise(resolve=>prefs.once('show',resolve));
   const errors=await prefs.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({timer:!document.querySelector('#timerPanel').hidden,rows:document.querySelectorAll('.shortcut-row').length}))))`);assert.equal(errors.timer,true);assert.equal(errors.rows,5);
+  r=await prefs.webContents.executeJavaScript(`(async()=>{const input=document.querySelector('#petSize');input.value='250';input.dispatchEvent(new Event('input'));input.dispatchEvent(new Event('change'));return true;})()`);
+  for(let i=0;i<50&&state.scale!==250;i++)await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(state.scale,250);assert.equal(pet.getBounds().width,200);assert.equal(pet.getBounds().height,215);
+  assert.equal(JSON.parse(fs.readFileSync(file,'utf8')).scale,250);
+  load();assert.equal(state.scale,250);
+  r=await prefs.webContents.executeJavaScript(`window.mochi.call('size',999)`);assert.equal(r.ok,false);assert.equal(state.scale,250);
+  await prefs.webContents.executeJavaScript(`window.mochi.call('size',150)`);
   const settingsShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-settings.png'),settingsShot.toPNG());
   const shot=await palette.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-palette.png'),shot.toPNG());
-  console.log('SMOKE PASS: assets, renderer IPC, 75-minute timer, zero rejection, stop, palette, settings.');app.quit();
+  console.log('SMOKE PASS: assets, renderer IPC, 75-minute timer, zero rejection, stop, palette, settings, size control, persistence, invalid size rejection.');app.quit();
 }
 app.on('before-quit',()=>{quitting=true;});
 app.on('window-all-closed',()=>{});

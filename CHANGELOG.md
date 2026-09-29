@@ -2,6 +2,16 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.1.0] - 2026-09-29
+
+### 추가
+
+- Windows 설정에 모찌 크기 슬라이더 추가: 100% ~ 250%, 25% 단위
+- 변경 즉시 적용 및 재실행 후 크기 복원
+- 크기 설정이 없는 경우 기본 150% 적용
+- 확대된 캐릭터의 이동 범위와 팔레트 위치 조정
+- macOS 배포 파일은 기존 2.0.0 유지
+
 ## [2.0.1] - 2026-09-29
 
 ### 수정
@@ -42,3 +52,5 @@
 [2.0.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.0.0
 
 [2.0.1]: https://github.com/chani337/desktop_mochi/releases/tag/v2.0.1
+
+[2.1.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.0

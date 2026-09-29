@@ -34,7 +34,9 @@ if(view==='pet') {
 } else if(view==='palette') {
   root.innerHTML='<section class="palette-shell"></section>';
 } else {
-  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 5개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><button class="primary" id="save">저장</button></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><div class="error" role="status"></div></div>`;
+  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><section class="size-control"><div><label for="petSize">모찌 크기</label><output id="petSizeValue" for="petSize">150%</output></div><input id="petSize" type="range" min="100" max="250" step="25" value="150"><p>100% ~ 250% · 크기를 바꾸면 바로 적용되고 자동 저장돼요.</p></section><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 5개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><button class="primary" id="save">저장</button></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><div class="error" role="status"></div></div>`;
+  const sizeInput=document.querySelector('#petSize');
+  sizeInput.oninput=()=>{document.querySelector('#petSizeValue').textContent=sizeInput.value+'%';call('size',Number(sizeInput.value)).catch(e=>error(e.message));};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
   document.querySelector('#save').onclick=async()=>{try{await call('save',collectRows());dirty=false;lastLinks=JSON.stringify(state.shortcuts);error('저장했어요.');}catch(e){error(e.message)}};
   document.querySelector('#startTimer').onclick=async()=>{try{await call('timer-start',{hours:document.querySelector('#timerHours').value,minutes:document.querySelector('#timerMinutes').value});error('');}catch(e){error(e.message)}};
@@ -64,6 +66,7 @@ function update(data){
   if(!data||!data.shortcuts)return;
   const first=!state;state=data;
   if(view==='pet'){
+    root.style.width='80px';root.style.height='86px';root.style.transformOrigin='0 0';root.style.transform=`scale(${state.scale/100})`;
     const hit=document.querySelector('.pet-hit');hit.className='pet-hit '+state.pose;
     const img=document.querySelector('#petImage'),src=state.pose==='sleeping'?'assets/mochi-sleep.png':'assets/mochi.png';if(img.getAttribute('src')!==src)img.src=src;
     if(!errorTimeout)document.querySelector('.pet-message').textContent=state.end?state.remaining:state.pose==='sleeping'?'Zzz':state.pose==='waving'?'♥':'';
@@ -74,6 +77,7 @@ function update(data){
     document.querySelectorAll('.action').forEach(b=>b.classList.toggle('selected',Number(b.dataset.index)>=0&&Number(b.dataset.index)===state.highlighted));
     document.querySelector('#paletteTimer .name').textContent=state.end?state.remaining:'타이머';
   }else{
+    if(document.activeElement!==document.querySelector('#petSize')){document.querySelector('#petSize').value=state.scale;document.querySelector('#petSizeValue').textContent=state.scale+'%';}
     if(first||(!dirty&&JSON.stringify(state.shortcuts)!==lastLinks)){renderRows(state.shortcuts);lastLinks=JSON.stringify(state.shortcuts);}
     if(first){document.querySelector('#timerHours').value=Math.floor(state.duration/60);document.querySelector('#timerMinutes').value=state.duration%60;}
     document.querySelector('.countdown').textContent=state.end?state.remaining:'준비됐나요?';document.querySelector('#startTimer').textContent=state.end?'새 시간으로 시작':'시작';

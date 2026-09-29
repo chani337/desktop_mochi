@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.0.1-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.0-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.1-win-x64.zip)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.1.0-win-x64.zip)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -54,7 +54,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.0.1-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.1-win-x64.zip)
+1. [Mochi-2.1.0-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.1.0-win-x64.zip)
 2. ZIP의 **전체 압축을 풀어주세요.**
 3. 폴더 안의 `Mochi.exe`를 실행합니다.
 
@@ -74,6 +74,10 @@
 4. 팔레트에서 해당 아이콘을 클릭하면 연결된 사이트나 파일이 열립니다.
 
 브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있습니다. 바로가기는 최대 **5개**까지 지원하며, Mac과 Windows의 설정은 각각 저장됩니다.
+
+### 모찌 크기 바꾸기 · Windows
+
+캐릭터를 클릭한 뒤 **설정 → 모찌 크기** 슬라이더를 움직여 주세요. **100%부터 250%까지 25% 단위**로 조절하며, 변경 즉시 적용되고 자동 저장됩니다. 기본 크기는 **150%**입니다. 이전 버전에서 업데이트한 경우에도 크기 설정이 없으면 150%로 시작합니다.
 
 ### 집중 타이머 맞추기
 
@@ -160,6 +164,12 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.1.0 · 2026.09.29 — Windows 크기 조절**
+
+- 설정에서 캐릭터 크기를 100% ~ 250%로 조절하고 자동 저장
+- 기본 크기를 150%로 확대하고, 확대 시 드래그 범위와 팔레트 위치도 반영
+
 
 **v2.0.1 · 2026.09.29 — Windows 수정**
 

@@ -35,4 +35,12 @@ function palettePoints(count) {
   return Array.from({length: count}, (_, i) => { const a = (count===1 ? 90 : 160-i*140/(count-1))*Math.PI/180; return {x:170+118*Math.cos(a),y:177-118*Math.sin(a)}; });
 }
 function selectedShortcut(point, count) { return palettePoints(count).findIndex(p => Math.hypot(p.x-point.x,p.y-point.y)<=34); }
-module.exports = { COLORS, ICONS, normalizeURL, validateShortcuts, inferIcon, durationSeconds, formatTime, palettePoints, selectedShortcut };
+function petSize(value) {
+  if (!Number.isInteger(value) || value < 100 || value > 250 || value % 25 !== 0) throw new Error('크기는 100%부터 250%까지 25% 단위로 설정해 주세요.');
+  return {width:Math.round(80*value/100),height:Math.round(86*value/100)};
+}
+function resizedPetBounds(bounds, area, scale) {
+  const size=petSize(scale);
+  return {...size,x:Math.round(Math.max(area.x,Math.min(bounds.x+(bounds.width-size.width)/2,area.x+area.width-size.width))),y:Math.round(Math.max(area.y,Math.min(bounds.y+bounds.height-size.height,area.y+area.height-size.height)))};
+}
+module.exports = { petSize, resizedPetBounds, COLORS, ICONS, normalizeURL, validateShortcuts, inferIcon, durationSeconds, formatTime, palettePoints, selectedShortcut };

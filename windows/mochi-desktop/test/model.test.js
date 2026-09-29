@@ -4,3 +4,14 @@ test('URLs normalize and reject executable web payloads',()=>{assert.equal(norma
 test('custom timer boundaries and hour display',()=>{assert.equal(durationSeconds(1,15),4500);assert.equal(durationSeconds(23,59),86340);assert.equal(formatTime(4500),'1:15:00');assert.equal(formatTime(59.2),'01:00');for(const v of [[0,0],[-1,5],[24,0],[0,60],[.5,0],['x',5]])assert.throws(()=>durationSeconds(...v));});
 test('gesture selects visible radial targets, not empty center',()=>{for(const count of [1,2,3,4,5]){const pts=palettePoints(count);pts.forEach((point,i)=>assert.equal(selectedShortcut(point,count),i));assert.equal(selectedShortcut({x:170,y:210},count),-1);}});
 test('shortcut validation preserves colors and order, drops empty rows',()=>{const result=validateShortcuts([{title:'YouTube',url:'youtube.com',icon:'play',color:'red'},{title:'',url:''},{title:'표',url:'https://docs.google.com/spreadsheets/',icon:'table',color:'green'}]);assert.equal(result.length,2);assert.equal(result[0].color,'red');assert.equal(result[1].title,'표');assert.throws(()=>validateShortcuts(Array(6).fill({title:'a',url:'a.com'})));});
+
+const {petSize,resizedPetBounds}=require('../model');
+test('pet size validation and resizing preserve feet and stay on screen',()=>{
+ assert.deepEqual(petSize(250),{width:200,height:215});
+ for(const value of [0,99,125.5,251,NaN,'150',null])assert.throws(()=>petSize(value));
+ const area={x:-1920,y:0,width:1920,height:1080};
+ const centered=resizedPetBounds({x:-1000,y:500,width:80,height:86},area,200);
+ assert.equal(centered.y+centered.height,586);assert.equal(centered.x+centered.width/2,-960);
+ const edge=resizedPetBounds({x:-80,y:0,width:80,height:86},area,250);
+ assert.ok(edge.x+edge.width<=0);assert.equal(edge.y,0);
+});

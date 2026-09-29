@@ -33,7 +33,7 @@ extension AppDelegate: SPUUpdaterDelegate {
         let links = try JSONDecoder().decode([Shortcut].self, from: rawLinks)
         guard links.count <= maxShortcuts, links.allSatisfy({ shortcutURL($0.url) != nil }) else { throw CocoaError(.fileReadCorruptFile) }
         try backupCurrentSettings()
-        for name in [key, "walking", "petScalePercent", "focusDurationMinutes"] {
+        for name in [key, "walking", "petScalePercent", "focusDurationMinutes", motionSettingsKey] {
             if let value = settings[name] { appPreferences.set(value, forKey: name) }
         }
         shortcuts = links; walking = appPreferences.bool(forKey: "walking")
@@ -41,7 +41,7 @@ extension AppDelegate: SPUUpdaterDelegate {
         settingsWindowAfterRestore()
     }
     private func settingsWindowAfterRestore() {
-        closeMenu(); settings?.orderOut(nil); settings = nil
+        closeMenu(); settings?.orderOut(nil); settings = nil; motionWindow?.close(); motionWindow = nil
     }
     @objc func restoreBackup() {
         let picker = NSOpenPanel(); picker.title = "모찌 설정 백업 선택"; picker.directoryURL = backupDirectory

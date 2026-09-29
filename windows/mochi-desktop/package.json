@@ -1,6 +1,6 @@
 {
   "name": "mochi-desktop",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Mochi desktop companion with radial shortcuts and a focus timer",
   "main": "main.js",
   "author": "Mochi Desktop",
@@ -30,7 +30,7 @@
     "extraFiles": [
       {
         "from": "WINDOWS-README.md",
-        "to": "읽어주세요.md"
+        "to": "\uc77d\uc5b4\uc8fc\uc138\uc694.md"
       }
     ],
     "directories": {

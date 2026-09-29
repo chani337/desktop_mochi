@@ -3,11 +3,12 @@ const fs = require('node:fs');
 const { backupSettings } = require('./backups');
 const { setupUpdates } = require('./updates');
 let updates;
+const Motions = require('./motions');
 const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
 const { MAX_SHORTCUTS, SHORTCUTS_PER_PAGE, COLORS, petSize, resizedPetBounds, validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
 let pet, palette, prefs, tray, file, state, dragging, holding = false, highlighted = -1;
-let lastTouch = Date.now(), waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
+let lastTouch = Date.now(), celebrateUntil = 0, waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
 const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, scale:150, duration:25, end:null };
 const smoke = process.argv.includes('--smoke-test');
 // Keep the portable and installed editions on the existing settings directory.
@@ -24,13 +25,14 @@ function load() {
   catch { state=structuredClone(defaults); }
   // Walking is opt-in each session, including upgrades with walking:true saved.
   state.walking=false;
+  state.motions=Motions.validate(state.motions);
   try {petSize(state.scale);} catch {state.scale=150;}
   if (!Number.isFinite(state.duration)||state.duration<1||state.duration>1439) state.duration=25;
   if (!Number.isFinite(state.end) || state.end<=Date.now()) state.end=null;
 }
 function publicState() {
   const now=Date.now(), remain=state.end ? Math.max(0,Math.ceil((state.end-now)/1000)) : 0;
-  return {...state, remaining:formatTime(remain), pose: dragging ? 'dragging' : now<landUntil ? 'landing' : now<waveUntil ? 'waving' : state.end ? 'sleeping' : now-lastTouch>600000 ? 'sleeping' : state.walking && !palette?.isVisible() && now>pauseUntil ? 'walking':'idle', highlighted, palette:!!palette?.isVisible()};
+  return {...state, remaining:formatTime(remain), pose: dragging ? 'dragging' : now<celebrateUntil ? 'celebrating' : now<landUntil ? 'landing' : now<waveUntil ? 'waving' : state.end ? 'focusing' : now-lastTouch>600000 ? 'sleeping' : state.walking && !palette?.isVisible() && now>pauseUntil ?'walking':palette?.isVisible()?'waving':'idle', highlighted, palette:!!palette?.isVisible()};
 }
 function send() { const data=publicState(); for (const w of [pet,palette,prefs]) if(w&&!w.isDestroyed()) w.webContents.send('mochi:update',data); }
 function touch() {lastTouch=Date.now();pauseUntil=Date.now()+1500;}
@@ -77,6 +79,7 @@ function authorize(event) { return [pet,palette,prefs].some(w=>w&&!w.isDestroyed
 function handle(name,fn) {ipcMain.handle('mochi:'+name,async(event,arg)=>{if(!authorize(event))throw new Error('Invalid sender');try{return {ok:true,data:await fn(arg,event)}}catch(error){return {ok:false,error:error.message}}});}
 function setupIPC() {
   handle('state',()=>publicState());
+  handle('motions',value=>{state.motions=Motions.validate(value);save();send();return state.motions;});
   handle('size',value=>{petSize(value);const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;state.scale=value;pet.setBounds(resizedPetBounds(p,r,value));if(palette.isVisible())showMenu(true);save();send();});
   handle('save',rows=>{state.shortcuts=validateShortcuts(rows);save();send();});
   handle('open',index=>openShortcut(index));
@@ -156,7 +159,7 @@ async function restoreSettings() {
   if(canceled||!filePaths.length)return;
   try {
     const data=JSON.parse(fs.readFileSync(filePaths[0],'utf8'));
-    const restored={...defaults,shortcuts:validateShortcuts(data.shortcuts),scale:data.scale??defaults.scale,duration:data.duration??defaults.duration,end:null,walking:false};
+    const restored={...defaults,motions:Motions.validate(data.motions),shortcuts:validateShortcuts(data.shortcuts),scale:data.scale??defaults.scale,duration:data.duration??defaults.duration,end:null,walking:false};
     petSize(restored.scale);
     if(!Number.isInteger(restored.duration)||restored.duration<1||restored.duration>1439)throw new Error('Invalid duration');
     const result=await dialog.showMessageBox({type:'question',message:'선택한 백업으로 설정을 복원할까요?',detail:'현재 설정은 먼저 백업합니다.',buttons:['복원','취소'],cancelId:1,defaultId:1});
@@ -175,7 +178,7 @@ function updateTray() {
 function tick() {
   if(!pet||pet.isDestroyed())return;
   const now=Date.now();
-  if(state.end && now>=state.end){state.end=null;touch();waveUntil=now+4000;save();pet.webContents.send('mochi:update',{complete:true,...publicState()});if(Notification.isSupported())new Notification({title:'모찌 · 집중 완료',body:'수고했어요! 잠깐 기지개를 켜요.'}).show();}
+  if(state.end && now>=state.end){state.end=null;touch();celebrateUntil=now+4000;save();pet.webContents.send('mochi:update',{complete:true,...publicState()});if(Notification.isSupported())new Notification({title:'모찌 · 집중 완료',body:'수고했어요! 잠깐 기지개를 켜요.'}).show();}
   if(dragging){const c=screen.getCursorScreenPoint(),r=screen.getDisplayNearestPoint(c).workArea;pet.setPosition(Math.round(Math.max(r.x,Math.min(dragging.bounds.x+c.x-dragging.point.x,r.x+r.width-dragging.bounds.width))),Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-dragging.bounds.height))));}
   else if(holding){const c=screen.getCursorScreenPoint(),r=palette.getBounds();highlighted=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);}
   else if(publicState().pose==='walking') {const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;let x=p.x+direction;if(x<r.x||x+p.width>r.x+r.width){direction*=-1;x=Math.max(r.x,Math.min(x,r.x+r.width-p.width));}pet.setPosition(x,Math.max(r.y,Math.min(p.y,r.y+r.height-p.height)));}
@@ -196,9 +199,9 @@ async function smokeTest() {
   const assert=require('node:assert/strict');
   const ready=w=>w.webContents.isLoading()?new Promise(resolve=>w.webContents.once('did-finish-load',resolve)):Promise.resolve();
   await Promise.all([ready(pet),ready(palette)]);
-  const result=await pet.webContents.executeJavaScript(`(async()=>{const result=await window.mochi.call('state');return {ok:result.ok, count:result.data.shortcuts.length, loaded:document.querySelector('#petImage').naturalWidth>0};})()`);
+  const result=await pet.webContents.executeJavaScript(`(async()=>{const result=await window.mochi.call('state');return {ok:result.ok, count:result.data.shortcuts.length, loaded:!!document.querySelector('#petImage.motion-sprite')};})()`);
   assert.equal(result.ok,true);assert.ok(result.count<=MAX_SHORTCUTS);assert.equal(result.loaded,true);
-  const sleepLoaded=await pet.webContents.executeJavaScript(`new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>0);i.onerror=()=>resolve(false);i.src='assets/mochi-sleep.png';})`);assert.equal(sleepLoaded,true);
+  const sleepLoaded=await pet.webContents.executeJavaScript(`new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>0);i.onerror=()=>resolve(false);i.src='assets/mochi-motions.png';})`);assert.equal(sleepLoaded,true);
   let r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:1,minutes:15})`);assert.equal(r.ok,true);assert.ok(state.end>Date.now()+4490000);
   r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:0,minutes:0})`);assert.equal(r.ok,false);
   await pet.webContents.executeJavaScript(`window.mochi.call('timer-stop')`);assert.equal(state.end,null);
@@ -326,6 +329,21 @@ async function smokeTest() {
     assert.equal(state.shortcuts.length,2);
   } finally {dialog.showOpenDialog=realDialog;shell.openPath=realOpen;}
   console.log('APP REGISTRATION PASS: installed apps, picker, select, save, restore, exact launch path, cancel');
+  const linksBefore=JSON.stringify(state.shortcuts);
+  await prefs.webContents.executeJavaScript(`window.mochi.call('motions',{idle:'dance',sleeping:'sleep',celebrating:'jump'})`);
+  load();assert.equal(state.motions.idle,'dance');assert.equal(JSON.stringify(state.shortcuts),linksBefore);
+  state.end=Date.now()+10000;waveUntil=landUntil=celebrateUntil=0;assert.equal(publicState().pose,'focusing');
+  state.end=Date.now()-1;tick();assert.equal(publicState().pose,'celebrating');celebrateUntil=0;
+  lastTouch=Date.now()-600001;assert.equal(publicState().pose,'sleeping');touch();
+  showSettings('motions');
+  await prefs.webContents.executeJavaScript(`document.querySelector('#closeAppPicker').click()`);
+  await new Promise(resolve=>setTimeout(resolve,350));
+  assert.equal(await prefs.webContents.executeJavaScript(`document.querySelectorAll('[data-motion]').length`),8);
+  assert.equal(await prefs.webContents.executeJavaScript(`document.querySelector('[data-motion="idle"]').value`),'dance');
+  const motionShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-motions.png'),motionShot.toPNG());
+  await prefs.webContents.executeJavaScript(`document.querySelector('#resetMotions').click()`);
+  await new Promise(resolve=>setTimeout(resolve,200));assert.equal(state.motions.idle,'idle');
+  console.log('MOTIONS PASS: selection, persistence, existing links, focus/complete/sleep contexts, 8 controls, reset');
   const settingsShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-settings.png'),settingsShot.toPNG());
   const shot=await palette.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-palette.png'),shot.toPNG());
   console.log('SMOKE PASS: assets, renderer IPC, timer, palette, settings, size control, persistence, 0/1/5/6/7/10 shortcuts, pagination, reset, drop expand, max 10 limit.');app.quit();

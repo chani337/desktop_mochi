@@ -137,7 +137,7 @@ struct Shortcut: Codable {
     }
 }
 
-enum PetPose { case normal, sleeping, dragging, landing, waving, focusing }
+enum PetPose { case normal, sleeping, dragging, landing, waving, focusing, celebrating }
 
 let shortcutSymbols: [(String, String)] = [("웹", "safari"), ("재생", "play.fill"), ("표", "tablecells"), ("폴더", "folder.fill"), ("별", "star.fill"), ("체크", "checkmark.circle.fill"), ("음악", "music.note")]
 let shortcutColors: [(String, String, NSColor)] = [("파랑", "blue", .systemBlue), ("빨강", "red", .systemRed), ("초록", "green", .systemGreen), ("주황", "orange", .systemOrange), ("보라", "purple", .systemPurple), ("분홍", "pink", .systemPink)]
@@ -299,21 +299,18 @@ final class CatView: NSView {
         NSGraphicsContext.restoreGraphicsState()
     }
     private func drawArtwork(_ image: NSImage) {
-        let resting = pose == .sleeping || pose == .focusing
-        let blink = Int(phase * 10) % 85 < 3
-        let sprite = (resting || blink) ? (sleepingArtwork ?? image) : image
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current?.imageInterpolation = .high
-        let t = NSAffineTransform()
-        t.translateX(by: 85, yBy: 153)
-        if pose == .dragging { t.rotate(byDegrees: sin(phase) * 8) }
-        else if pose == .waving { t.rotate(byDegrees: sin(phase * 2) * 7); t.translateX(by: 0, yBy: -6) }
-        else if walking { t.rotate(byDegrees: sin(phase * 1.8) * 3); t.translateX(by: 0, yBy: -abs(sin(phase * 1.8)) * 4) }
-        if pose == .landing { t.scaleX(by: 1.12, yBy: 0.86) }
-        else if resting { t.scaleX(by: 1 + sin(phase * 0.5)*0.01, yBy: 1 + sin(phase * 0.5)*0.015) }
-        t.translateX(by: -85, yBy: -153); t.concat()
-        sprite.draw(in: NSRect(x: 0, y: 9, width: 170, height: 170), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-        NSGraphicsContext.restoreGraphicsState()
+        let context: String
+        switch pose {
+        case .sleeping: context = "sleeping"
+        case .dragging: context = "dragging"
+        case .landing: context = "landing"
+        case .waving: context = "waving"
+        case .focusing: context = "focusing"
+        case .celebrating: context = "celebrating"
+        case .normal: context = walking ? "walking" : excited ? "waving" : "idle"
+        }
+        if motionSprites.count == 18 { drawMotion(selectedMotion(context), in: NSRect(x: 0, y: 9, width: 170, height: 170), phase: phase) }
+        else { image.draw(in: NSRect(x: 0, y: 9, width: 170, height: 170)) }
         let text: String = dropTarget ? "놓기!" : pose == .focusing ? (focusText ?? "") : pose == .sleeping ? "Zzz" : (excited || pose == .waving) ? "♥" : ""
         if !text.isEmpty {
             let style = NSMutableParagraphStyle(); style.alignment = .center
@@ -328,6 +325,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var menuPanel: NSPanel?
     var updaterController: SPUStandardUpdaterController?
     var settings: NSWindow?
+    var motionWindow: NSWindow?
     var sizeLabel: NSTextField?
     var petScale = 100
     let sizeDefaults = CommandLine.arguments.contains("--size-test") ? UserDefaults(suiteName: "local.desktopcat.size-tests")! : appPreferences
@@ -499,6 +497,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var lastInteraction = Date()
     var landingUntil = Date.distantPast
     var wavingUntil = Date.distantPast
+    var celebratingUntil = Date.distantPast
     var focusEnd: Date?
     var focusWindow: NSWindow?
     var hourField: NSTextField?
@@ -545,6 +544,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
         }
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
+        if CommandLine.arguments.contains("--motion-test") { testMotions(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--update-test") { testUpdateBackups(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--registration-test") { testAppRegistration(); NSApp.terminate(nil); return }
@@ -596,7 +596,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         status.button?.title = " 모찌"
         status.button?.toolTip = "모찌 · 집중 타이머 및 설정"
         let menu = NSMenu()
-        for (title, action) in [("모찌 데려오기", #selector(bringBack)), ("바로가기 설정…", #selector(showSettings)), ("집중 타이머 설정…", #selector(showFocusTimer)), ("산책 시작 / 멈춤", #selector(toggleWalking)), ("업데이트 확인…", #selector(checkForUpdates)), ("설정 백업 폴더 열기", #selector(openBackups)), ("설정 복원…", #selector(restoreBackup)), ("종료", #selector(quit))] {
+        for (title, action) in [("모찌 데려오기", #selector(bringBack)), ("바로가기 설정…", #selector(showSettings)), ("집중 타이머 설정…", #selector(showFocusTimer)), ("모션 설정…", #selector(showMotions)), ("산책 시작 / 멈춤", #selector(toggleWalking)), ("업데이트 확인…", #selector(checkForUpdates)), ("설정 백업 폴더 열기", #selector(openBackups)), ("설정 복원…", #selector(restoreBackup)), ("종료", #selector(quit))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
         }
         status.menu = menu
@@ -626,11 +626,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     func animate() {
         tick += 1; cat.phase += 0.10
+        if motionWindow?.isVisible == true { for case let preview as MotionPreview in motionWindow?.contentView?.subviews ?? [] { preview.needsDisplay = true } }
         let now = Date()
         if let end = focusEnd {
             let remaining = max(0, Int(end.timeIntervalSince(now).rounded(.up)))
             if remaining == 0 {
-                focusEnd = nil; touch(); wavingUntil = now.addingTimeInterval(4); NSSound(named: "Glass")?.play(); status.button?.title = " 모찌"
+                focusEnd = nil; touch(); celebratingUntil = now.addingTimeInterval(4); NSSound(named: "Glass")?.play(); status.button?.title = " 모찌"
                 focusStatus?.stringValue = "집중 완료! 잠깐 기지개를 켜요."
                 focusStartButton?.title = "시작"; paletteTimerButton?.title = "타이머"; paletteTimerButton?.needsDisplay = true
             } else {
@@ -640,6 +641,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let compact = remaining >= 3600 ? String(format: "%d:%02d", remaining/3600, remaining/60%60) : String(format: "%02d:%02d", remaining/60, remaining%60)
                 paletteTimerButton?.title = compact; paletteTimerButton?.needsDisplay = true
             }
+        } else if now < celebratingUntil { cat.pose = .celebrating
         } else if now < landingUntil { cat.pose = .landing
         } else if now < wavingUntil { cat.pose = .waving
         } else if now.timeIntervalSince(lastInteraction) > 10 * 60 { cat.pose = .sleeping
@@ -837,6 +839,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sizeTitle.font = .systemFont(ofSize: 17, weight: .semibold)
         sizeTitle.frame = NSRect(x: 25, y: 510, width: 400, height: 25)
         view.addSubview(sizeTitle); sizeLabel = sizeTitle
+        let motionsButton = NSButton(title: "모션 설정…", target: self, action: #selector(showMotions)); motionsButton.bezelStyle = .rounded; motionsButton.frame = NSRect(x: 650, y: 506, width: 140, height: 32); view.addSubview(motionsButton)
         let sizeSlider = NSSlider(value: Double(petScale), minValue: 100, maxValue: 250, target: self, action: #selector(changePetSize(_:)))
         sizeSlider.numberOfTickMarks = 7; sizeSlider.allowsTickMarkValuesOnly = true; sizeSlider.isContinuous = true
         sizeSlider.frame = NSRect(x: 25, y: 470, width: 765, height: 30)

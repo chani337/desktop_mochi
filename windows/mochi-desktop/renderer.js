@@ -24,7 +24,7 @@ function icon(name) {return `<svg viewBox="0 0 24 24" aria-hidden="true">${iconP
 async function call(name,value){const result=await api.call(name,value);if(!result.ok)throw new Error(result.error);return result.data;}
 function error(message){const e=document.querySelector('.error');if(e)e.textContent=message;else{const e=document.querySelector('.pet-message');if(e){e.textContent=message;clearTimeout(errorTimeout);errorTimeout=setTimeout(()=>{e.textContent='';errorTimeout=null;},5000);}}}
 if(view==='pet') {
-  root.innerHTML='<div class="pet-message"></div><button class="pet-hit" title="클릭: 바로가기 · 꾹 누르고 쓸기: 실행 · 드래그: 이동" aria-label="모찌 바로가기"><img id="petImage" src="assets/mochi.png" draggable="false" alt="포근한 아기 햄스터 모찌"></button>';
+  root.innerHTML='<div class="pet-message"></div><button class="pet-hit" title="클릭: 바로가기 · 꾹 누르고 쓸기: 실행 · 드래그: 이동" aria-label="모찌 바로가기"><canvas id="petImage" class="motion-sprite" width="264" height="264" role="img" aria-label="포근한 아기 햄스터 모찌"></canvas></button>';
   const hit=document.querySelector('.pet-hit');
   let holdTimer, start, dragging=false, holding=false;
   hit.addEventListener('pointerdown',e=>{if(e.button!==0)return;pointerActive=true;hit.setPointerCapture(e.pointerId);start={x:e.screenX,y:e.screenY};dragging=false;holding=false;holdTimer=setTimeout(()=>{holding=true;call('hold').catch(e=>error(e.message));},260);});
@@ -37,10 +37,13 @@ if(view==='pet') {
 } else if(view==='palette') {
   root.innerHTML='<section class="palette-shell"></section>';
 } else {
-  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><section class="size-control"><div><label for="petSize">모찌 크기</label><output id="petSizeValue" for="petSize">150%</output></div><input id="petSize" type="range" min="100" max="250" step="25" value="150"><p>100% ~ 250% · 크기를 바꾸면 바로 적용되고 자동 저장돼요.</p></section><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 10개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><div class="footer-actions"><button type="button" class="secondary" id="openAppPicker">+ 설치된 앱 가져오기</button><button class="primary" id="save">저장</button></div></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><div id="appPickerModal" class="modal-overlay" hidden><div class="modal-card"><div class="modal-head"><h3>설치된 앱 가져오기</h3><button type="button" class="modal-close" id="closeAppPicker" aria-label="닫기">×</button></div><div class="modal-search-row"><input type="text" id="appSearchInput" placeholder="앱 검색 (예: Chrome, Code, 메모장...)" autocomplete="off"><button type="button" class="secondary" id="browseCustomFile">파일 직접 찾기…</button></div><div id="appList" class="app-list"></div></div></div><div class="error" role="status"></div></div>`;
+  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><section class="size-control"><div><label for="petSize">모찌 크기</label><output id="petSizeValue" for="petSize">150%</output></div><input id="petSize" type="range" min="100" max="250" step="25" value="150"><p>100% ~ 250% · 크기를 바꾸면 바로 적용되고 자동 저장돼요.</p></section><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button><button data-tab="motions">모션</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 10개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><div class="footer-actions"><button type="button" class="secondary" id="openAppPicker">+ 설치된 앱 가져오기</button><button class="primary" id="save">저장</button></div></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><section id="motionsPanel" class="panel" hidden><p class="hint">상황마다 좋아하는 모습을 골라요. 즉시 적용하고 자동 저장해요.</p><div id="motionRows"></div><button id="resetMotions" class="secondary">기본 모션으로 되돌리기</button></section><div id="appPickerModal" class="modal-overlay" hidden><div class="modal-card"><div class="modal-head"><h3>설치된 앱 가져오기</h3><button type="button" class="modal-close" id="closeAppPicker" aria-label="닫기">×</button></div><div class="modal-search-row"><input type="text" id="appSearchInput" placeholder="앱 검색 (예: Chrome, Code, 메모장...)" autocomplete="off"><button type="button" class="secondary" id="browseCustomFile">파일 직접 찾기…</button></div><div id="appList" class="app-list"></div></div></div><div class="error" role="status"></div></div>`;
   const sizeInput=document.querySelector('#petSize');
   sizeInput.oninput=()=>{document.querySelector('#petSizeValue').textContent=sizeInput.value+'%';call('size',Number(sizeInput.value)).catch(e=>error(e.message));};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+  document.querySelector('#motionRows').innerHTML=Motions.contexts.map(c=>`<label class="motion-row"><canvas class="motion-sprite" width="264" height="264" data-preview="${c.id}"></canvas><span>${c.name}</span><select aria-label="${c.name}" data-motion="${c.id}">${Motions.motions.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></label>`).join('');
+  document.querySelectorAll('[data-motion]').forEach(select=>select.onchange=()=>call('motions',{...state.motions,[select.dataset.motion]:select.value}).catch(e=>error(e.message)));
+  document.querySelector('#resetMotions').onclick=()=>call('motions',{}).catch(e=>error(e.message));
   document.querySelector('#save').onclick=async()=>{try{await call('save',collectRows());dirty=false;lastLinks=JSON.stringify(state.shortcuts);error('저장했어요.');}catch(e){error(e.message)}};
   document.querySelector('#startTimer').onclick=async()=>{try{await call('timer-start',{hours:document.querySelector('#timerHours').value,minutes:document.querySelector('#timerMinutes').value});error('');}catch(e){error(e.message)}};
   document.querySelector('#stopTimer').onclick=()=>call('timer-stop').catch(e=>error(e.message));
@@ -89,7 +92,7 @@ if(view==='pet') {
     }catch(err){error(err.message);}
   };
 }
-function switchTab(tab){document.querySelector('#linksPanel').hidden=tab==='timer';document.querySelector('#timerPanel').hidden=tab!=='timer';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));error('');}
+function switchTab(tab){for(const name of ['links','timer','motions'])document.querySelector('#'+name+'Panel').hidden=tab!==name;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));error('');}
 function collectRows(){return [...document.querySelectorAll('.shortcut-row')].map(row=>({title:row.querySelector('.title').value,url:row.querySelector('.url').value,icon:row.querySelector('.icon-select').value,color:row.querySelector('.color-select').value}));}
 function renderRows(data){
   const container=document.querySelector('#rows');container.replaceChildren();
@@ -119,13 +122,20 @@ function renderPalette(){
   add(state.end?state.remaining:'타이머','timer','',170,185,()=>call('settings','timer'),true).id='paletteTimer';
   add('닫기','close','',219,185,()=>call('menu',false),true);
 }
+const motionAtlas=new Image();motionAtlas.src='assets/mochi-motions.png';
+motionAtlas.onload=()=>{if(state)update(state);};
+function paintMotion(element,motion){
+  element.className='motion-sprite motion-'+motion.id;
+  if(motionAtlas.complete&&motionAtlas.naturalWidth){const ctx=element.getContext('2d'),[x,y,w,h]=motion.rect,size=element.width,scale=size/Math.max(w,h);ctx.clearRect(0,0,size,size);ctx.drawImage(motionAtlas,x,y,w,h,(size-w*scale)/2,(size-h*scale)/2,w*scale,h*scale);}
+  element.setAttribute('aria-label',motion.name);
+}
 function update(data){
   if(!data||!data.shortcuts)return;
   const first=!state;state=data;
   if(view==='pet'){
     root.style.width='80px';root.style.height='86px';root.style.transformOrigin='0 0';root.style.transform=`scale(${state.scale/100})`;
     const hit=document.querySelector('.pet-hit');hit.className='pet-hit '+state.pose;
-    const img=document.querySelector('#petImage'),src=state.pose==='sleeping'?'assets/mochi-sleep.png':'assets/mochi.png';if(img.getAttribute('src')!==src)img.src=src;
+    paintMotion(document.querySelector('#petImage'),Motions.selected(state.motions,state.pose));
     if(!errorTimeout)document.querySelector('.pet-message').textContent=state.end?state.remaining:state.pose==='sleeping'?'Zzz':state.pose==='waving'?'♥':'';
     if(data.complete){try{const ctx=new AudioContext(),o=ctx.createOscillator(),gain=ctx.createGain();o.connect(gain);gain.connect(ctx.destination);o.frequency.value=660;gain.gain.setValueAtTime(.1,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7);o.start();o.stop(ctx.currentTime+.7);o.onended=()=>ctx.close();}catch{}}
   }else if(view==='palette'){
@@ -139,6 +149,7 @@ function update(data){
     if(first||(!dirty&&JSON.stringify(state.shortcuts)!==lastLinks)){renderRows(state.shortcuts);lastLinks=JSON.stringify(state.shortcuts);}
     if(first){document.querySelector('#timerHours').value=Math.floor(state.duration/60);document.querySelector('#timerMinutes').value=state.duration%60;}
     document.querySelector('.countdown').textContent=state.end?state.remaining:'준비됐나요?';document.querySelector('#startTimer').textContent=state.end?'새 시간으로 시작':'시작';
+    for(const c of Motions.contexts){const motion=Motions.selected(state.motions,c.id);document.querySelector(`[data-motion="${c.id}"]`).value=motion.id;paintMotion(document.querySelector(`[data-preview="${c.id}"]`),motion);}
     if(data.tab)switchTab(data.tab);
   }
 }

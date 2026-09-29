@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.3.0-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.0-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.3.0.exe)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.0.exe)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -38,6 +38,18 @@
 | 💤 **10분 뒤 낮잠** | 10분 동안 캐릭터와 상호작용하지 않으면 잠들어요. |
 | 📌 **메뉴바와 트레이** | 설정, 산책 제어, 위치 복구, 종료 기능에 빠르게 접근해요. |
 
+## 오늘의 모찌는 내 취향대로
+
+18가지 표정과 자세에 부드러운 흔들림·호흡·점프 효과를 더했어요. **대기, 산책, 수면, 드래그, 내려놓기, 클릭 반응, 집중 중, 타이머 완료**를 각각 원하는 모습으로 바꿀 수 있습니다.
+
+- **Mac:** 바로가기 설정 → **모션 설정…** 또는 메뉴바 → **모션 설정…**
+- **Windows:** 설정 → **모션** 탭 (아래로 스크롤하면 모든 상황이 보여요)
+- 각 상황의 목록에서 선택하면 미리보기와 캐릭터에 바로 반영되고 자동 저장됩니다.
+- **기본 모션으로 되돌리기**는 모션 선택만 초기화하며 기존 링크·크기·타이머 설정은 유지합니다.
+- 기본 수면은 잠자는 모습, 집중 중에는 앉기, 완료하면 박수예요. 산책을 켜지 않으면 위치는 움직이지 않아요.
+
+원본은 정지 포즈 시트이며, 앱이 포즈별 움직임 효과를 적용합니다. 프레임별로 팔다리가 바뀌는 영상 애니메이션은 아닙니다.
+
 ## 시작하기
 
 ### macOS
@@ -54,7 +66,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-Setup-2.3.0.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.3.0.exe)
+1. [Mochi-Setup-2.4.0.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.0.exe)
 2. 기존 모찌가 실행 중이면 트레이 메뉴에서 **종료**합니다.
 3. 설치 파일을 실행하고 안내에 따라 설치한 뒤 모찌를 실행합니다.
 

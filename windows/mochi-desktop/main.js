@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Not
 const fs = require('node:fs');
 const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
-const { petSize, resizedPetBounds, validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
+const { MAX_SHORTCUTS, SHORTCUTS_PER_PAGE, COLORS, petSize, resizedPetBounds, validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
 let pet, palette, prefs, tray, file, state, dragging, holding = false, highlighted = -1;
 let lastTouch = Date.now(), waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
 const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, scale:150, duration:25, end:null };
@@ -84,7 +84,7 @@ function setupIPC() {
   handle('drag-end',()=>{dragging=null;landUntil=Date.now()+450;touch();send();});
   handle('hold',()=>{holding=true;showMenu(true);});
   handle('release',async()=>{if(holding){holding=false;const c=screen.getCursorScreenPoint(),r=palette.getBounds();const i=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);if(i>=0)await openShortcut(i);highlighted=-1;send();}});
-  handle('drop',raw=>{if(state.shortcuts.length>=5)throw new Error('최대 5개예요. 설정에서 하나를 지워 주세요.');const url=normalizeURL(raw),u=new URL(url);state.shortcuts.push({title:(u.hostname||path.basename(u.pathname)||'바로가기').replace(/^www\./,'').slice(0,24),url,icon:inferIcon(url),color:['blue','red','green','orange','purple'][state.shortcuts.length]});save();touch();waveUntil=Date.now()+1600;send();});
+  handle('drop',raw=>{if(state.shortcuts.length>=MAX_SHORTCUTS)throw new Error('바로가기는 최대 10개까지 등록할 수 있어요.');const url=normalizeURL(raw),u=new URL(url);state.shortcuts.push({title:(u.hostname||path.basename(u.pathname)||'바로가기').replace(/^www\./,'').slice(0,24),url,type:'url',target:url,icon:inferIcon(url),color:COLORS[state.shortcuts.length % COLORS.length]});save();touch();waveUntil=Date.now()+1600;send();});
   handle('ignore',(ignore,event)=>{const w=BrowserWindow.fromWebContents(event.sender);if(w===pet||w===palette)w.setIgnoreMouseEvents(!!ignore,{forward:true});});
   handle('quit',()=>app.quit());
 }
@@ -113,7 +113,7 @@ async function smokeTest() {
   const ready=w=>w.webContents.isLoading()?new Promise(resolve=>w.webContents.once('did-finish-load',resolve)):Promise.resolve();
   await Promise.all([ready(pet),ready(palette)]);
   const result=await pet.webContents.executeJavaScript(`(async()=>{const result=await window.mochi.call('state');return {ok:result.ok, count:result.data.shortcuts.length, loaded:document.querySelector('#petImage').naturalWidth>0};})()`);
-  assert.equal(result.ok,true);assert.ok(result.count<=5);assert.equal(result.loaded,true);
+  assert.equal(result.ok,true);assert.ok(result.count<=MAX_SHORTCUTS);assert.equal(result.loaded,true);
   const sleepLoaded=await pet.webContents.executeJavaScript(`new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>0);i.onerror=()=>resolve(false);i.src='assets/mochi-sleep.png';})`);assert.equal(sleepLoaded,true);
   let r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:1,minutes:15})`);assert.equal(r.ok,true);assert.ok(state.end>Date.now()+4490000);
   r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:0,minutes:0})`);assert.equal(r.ok,false);
@@ -132,7 +132,7 @@ async function smokeTest() {
   assert.equal(palette.getParentWindow(),pet);
   showSettings('timer');await ready(prefs);
   if(!prefs.isVisible())await new Promise(resolve=>prefs.once('show',resolve));
-  const errors=await prefs.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({timer:!document.querySelector('#timerPanel').hidden,rows:document.querySelectorAll('.shortcut-row').length}))))`);assert.equal(errors.timer,true);assert.equal(errors.rows,5);
+  const errors=await prefs.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({timer:!document.querySelector('#timerPanel').hidden,rows:document.querySelectorAll('.shortcut-row').length}))))`);assert.equal(errors.timer,true);assert.equal(errors.rows,MAX_SHORTCUTS);
   r=await prefs.webContents.executeJavaScript(`(async()=>{const input=document.querySelector('#petSize');input.value='250';input.dispatchEvent(new Event('input'));input.dispatchEvent(new Event('change'));return true;})()`);
   for(let i=0;i<50&&state.scale!==250;i++)await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(state.scale,250);assert.equal(pet.getBounds().width,200);assert.equal(pet.getBounds().height,215);
@@ -140,9 +140,89 @@ async function smokeTest() {
   load();assert.equal(state.scale,250);
   r=await prefs.webContents.executeJavaScript(`window.mochi.call('size',999)`);assert.equal(r.ok,false);assert.equal(state.scale,250);
   await prefs.webContents.executeJavaScript(`window.mochi.call('size',150)`);
+
+  // Test shortcut pagination and limits in palette & settings
+  // 0개 (링크 추가 버튼 표시됨)
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',[])`);
+  showMenu(true);
+  for(let i=0;i<50&&!palette.isVisible();i++)await new Promise(resolve=>setTimeout(resolve,20));
+  let palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 1); assert.equal(palState.more, false);
+
+  // 1개
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',[{title:'1',url:'https://1.com'}])`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 1); assert.equal(palState.more, false);
+
+  // 5개
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:5},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, false);
+
+  // 6개: 1페이지 5개 + 더보기, 2페이지 1개 + 이전
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:6},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+  await palette.webContents.executeJavaScript(`document.querySelector('.action[aria-label="더보기"]').click()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, prev:!!document.querySelector('.action[aria-label="이전"]')})`);
+  assert.equal(palState.actions, 1); assert.equal(palState.prev, true);
+  await palette.webContents.executeJavaScript(`document.querySelector('.action[aria-label="이전"]').click()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+
+  // 7개
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:7},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  await palette.webContents.executeJavaScript(`document.querySelector('.action[aria-label="더보기"]').click()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, prev:!!document.querySelector('.action[aria-label="이전"]')})`);
+  assert.equal(palState.actions, 2); assert.equal(palState.prev, true);
+
+  // 10개
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:10},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+  await palette.webContents.executeJavaScript(`document.querySelector('.action[aria-label="더보기"]').click()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, prev:!!document.querySelector('.action[aria-label="이전"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.prev, true);
+
+  // 페이지 초기화: 2페이지 상태에서 팔레트 닫고 열면 1페이지
+  showMenu(false);
+  await new Promise(resolve=>setTimeout(resolve,100));
+  showMenu(true);
+  for(let i=0;i<50&&!palette.isVisible();i++)await new Promise(resolve=>setTimeout(resolve,20));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+
+  // 삭제: 6개 -> 5개로 줄이면 더보기 자동 제거
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:5},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, false);
+
+  // 드롭: 5개에서 드롭 시 6개로 확장 + 더보기 나타남
+  await pet.webContents.executeJavaScript(`window.mochi.call('drop','https://drop6.com')`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
+  assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+  assert.equal(state.shortcuts.length, 6);
+
+  // 최대 10개 제한: 10개 상태에서 드롭 시도 시 실패
+  await pet.webContents.executeJavaScript(`window.mochi.call('save',Array.from({length:10},(_,i)=>({title:'Link'+(i+1),url:'https://'+(i+1)+'.com'})))`);
+  const dropOver = await pet.webContents.executeJavaScript(`window.mochi.call('drop','https://drop11.com')`);
+  assert.equal(dropOver.ok, false);
+  assert.equal(state.shortcuts.length, 10);
+
   const settingsShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-settings.png'),settingsShot.toPNG());
   const shot=await palette.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-palette.png'),shot.toPNG());
-  console.log('SMOKE PASS: assets, renderer IPC, 75-minute timer, zero rejection, stop, palette, settings, size control, persistence, invalid size rejection.');app.quit();
+  console.log('SMOKE PASS: assets, renderer IPC, timer, palette, settings, size control, persistence, 0/1/5/6/7/10 shortcuts, pagination, reset, drop expand, max 10 limit.');app.quit();
 }
 app.on('before-quit',()=>{quitting=true;});
 app.on('window-all-closed',()=>{});

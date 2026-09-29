@@ -68,11 +68,55 @@ final class PaletteButton: NSButton {
     }
 }
 
+let maxShortcuts = 10
+let shortcutsPerPage = 5
+
+final class FlippedView: NSView {
+    override var isFlipped: Bool { true }
+}
+
 struct Shortcut: Codable {
     var title: String
     var url: String
     var symbol: String? = nil
     var color: String? = nil
+    var type: String? = "url"
+    var target: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case title, name, url, target, symbol, color, type
+    }
+
+    init(title: String, url: String, symbol: String? = nil, color: String? = nil, type: String? = "url", target: String? = nil) {
+        self.title = title
+        self.url = url
+        self.symbol = symbol
+        self.color = color
+        self.type = type
+        self.target = target ?? url
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawTitle = try container.decodeIfPresent(String.self, forKey: .title) ?? container.decodeIfPresent(String.self, forKey: .name) ?? "바로가기"
+        let rawUrl = try container.decodeIfPresent(String.self, forKey: .url) ?? container.decodeIfPresent(String.self, forKey: .target) ?? ""
+        self.title = rawTitle
+        self.url = rawUrl
+        self.symbol = try container.decodeIfPresent(String.self, forKey: .symbol)
+        self.color = try container.decodeIfPresent(String.self, forKey: .color)
+        self.type = try container.decodeIfPresent(String.self, forKey: .type) ?? "url"
+        self.target = try container.decodeIfPresent(String.self, forKey: .target) ?? rawUrl
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(url, forKey: .url)
+        try container.encodeIfPresent(symbol, forKey: .symbol)
+        try container.encodeIfPresent(color, forKey: .color)
+        try container.encodeIfPresent(type, forKey: .type)
+        try container.encodeIfPresent(target ?? url, forKey: .target)
+    }
 }
 
 enum PetPose { case normal, sleeping, dragging, landing, waving, focusing }
@@ -318,6 +362,107 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("SIZE TEST PASS: slider, bounds, saved setting, invalid size, palette")
     }
 
+    func testShortcuts() {
+        let original = shortcuts
+        defer { shortcuts = original; closeMenu() }
+
+        // 1. 0개
+        shortcuts = []
+        toggleMenu(); precondition(menuPanel != nil); precondition(paletteButtons.count == 0)
+        closeMenu(); precondition(menuPanel == nil)
+
+        // 2. 1개
+        shortcuts = [Shortcut(title: "1", url: "https://1.com")]
+        toggleMenu(); precondition(paletteButtons.count == 1)
+        precondition(!menuPanel!.contentView!.subviews.contains { ($0 as? NSButton)?.title == "더보기" })
+        closeMenu()
+
+        // 3. 5개
+        shortcuts = (1...5).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        toggleMenu(); precondition(paletteButtons.count == 5)
+        precondition(!menuPanel!.contentView!.subviews.contains { ($0 as? NSButton)?.title == "더보기" })
+        closeMenu()
+
+        // 4. 6개
+        shortcuts = (1...6).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        toggleMenu(); precondition(paletteButtons.count == 5)
+        guard let moreBtn6 = menuPanel!.contentView!.subviews.compactMap({ $0 as? PaletteButton }).first(where: { $0.title == "더보기" }) else {
+            fatalError("Missing more button for 6 items")
+        }
+        moreBtn6.performClick(nil)
+        precondition(palettePage == 1 && paletteButtons.count == 1)
+        guard let prevBtn6 = menuPanel!.contentView!.subviews.compactMap({ $0 as? PaletteButton }).first(where: { $0.title == "이전" }) else {
+            fatalError("Missing prev button for 6 items page 2")
+        }
+        prevBtn6.performClick(nil)
+        precondition(palettePage == 0 && paletteButtons.count == 5)
+        closeMenu()
+
+        // 5. 7개
+        shortcuts = (1...7).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        toggleMenu(); precondition(paletteButtons.count == 5)
+        nextPalettePage(); precondition(palettePage == 1 && paletteButtons.count == 2)
+        closeMenu()
+
+        // 6. 10개
+        shortcuts = (1...10).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        toggleMenu(); precondition(paletteButtons.count == 5)
+        nextPalettePage(); precondition(palettePage == 1 && paletteButtons.count == 5)
+        // Check tags (indices for execution)
+        for (i, btn) in paletteButtons.enumerated() {
+            precondition(btn.tag == 5 + i)
+        }
+        closeMenu()
+
+        // 7. 삭제: 6개 -> 1개 삭제 -> 5개 (더보기 버튼 자동 제거)
+        shortcuts = (1...6).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        shortcuts.removeLast()
+        precondition(shortcuts.count == 5)
+        toggleMenu(); precondition(paletteButtons.count == 5)
+        precondition(!menuPanel!.contentView!.subviews.contains { ($0 as? NSButton)?.title == "더보기" })
+        closeMenu()
+
+        // 8. 실행: 태그 매핑 확인
+        shortcuts = (1...10).map { Shortcut(title: "앱\($0)", url: "https://app\($0).com") }
+        toggleMenu()
+        precondition(paletteButtons[0].tag == 0 && paletteButtons[4].tag == 4)
+        nextPalettePage()
+        precondition(paletteButtons[0].tag == 5 && paletteButtons[4].tag == 9)
+        closeMenu()
+
+        // 9. 저장 / 호환성
+        let legacyJson = """
+        [{"name":"레거시","target":"https://legacy.com"}]
+        """.data(using: .utf8)!
+        let decoded = try! JSONDecoder().decode([Shortcut].self, from: legacyJson)
+        precondition(decoded.count == 1 && decoded[0].title == "레거시" && decoded[0].url == "https://legacy.com")
+        let reencoded = try! JSONEncoder().encode(decoded)
+        let redecoded = try! JSONDecoder().decode([Shortcut].self, from: reencoded)
+        precondition(redecoded[0].title == "레거시")
+
+        // 10. 페이지 초기화: 2페이지 상태에서 닫았다가 다시 열면 1페이지
+        shortcuts = (1...8).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        toggleMenu(); nextPalettePage(); precondition(palettePage == 1)
+        closeMenu(); precondition(palettePage == 0)
+        toggleMenu(); precondition(palettePage == 0 && paletteButtons.count == 5)
+        closeMenu()
+
+        // 11. 드래그 앤 드롭으로 5개 -> 6개 확장
+        shortcuts = (1...5).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        addDroppedShortcut(URL(string: "https://drop-6.com")!)
+        precondition(shortcuts.count == 6)
+        toggleMenu()
+        precondition(menuPanel!.contentView!.subviews.contains { ($0 as? NSButton)?.title == "더보기" })
+        closeMenu()
+
+        // 12. 최대 10개 제한
+        shortcuts = (1...10).map { Shortcut(title: "\($0)", url: "https://\($0).com") }
+        addDroppedShortcut(URL(string: "https://drop-11.com")!)
+        precondition(shortcuts.count == 10)
+
+        print("SHORTCUT TEST PASS: 0, 1, 5, 6, 7, 10, delete, execute tag, legacy compat, reset, drop expand, max 10 limit")
+    }
+
     var status: NSStatusItem!
     var timer: Timer?
     var shortcuts: [Shortcut] = []
@@ -343,11 +488,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var focusError: NSTextField?
     var focusStartButton: NSButton?
     weak var paletteTimerButton: PaletteButton?
+    var palettePage = 0
     let key = "DesktopCat.shortcuts.v1"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMainMenu()
-        if let data = UserDefaults.standard.data(forKey: key), let saved = try? JSONDecoder().decode([Shortcut].self, from: data) { shortcuts = Array(saved.prefix(5)) }
+        if let data = UserDefaults.standard.data(forKey: key), let saved = try? JSONDecoder().decode([Shortcut].self, from: data) { shortcuts = Array(saved.prefix(maxShortcuts)) }
         else { shortcuts = [Shortcut(title: "검색", url: "https://www.google.com", symbol: "safari", color: "blue"), Shortcut(title: "YouTube", url: "https://www.youtube.com", symbol: "play.fill", color: "red")] }
         walking = UserDefaults.standard.object(forKey: "walking") as? Bool ?? true
         pet = PetPanel(contentRect: NSRect(x: 200, y: 100, width: 57, height: 60), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -376,6 +522,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatus()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
         if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
+        if CommandLine.arguments.contains("--shortcut-test") { testShortcuts(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--snapshot") { snapshot(); NSApp.terminate(nil) }
         if CommandLine.arguments.contains("--settings") { showSettings() }
         if CommandLine.arguments.contains("--timer") { showFocusTimer() }
@@ -443,11 +590,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     func addDroppedShortcut(_ url: URL) {
         touch()
-        guard shortcuts.count < 5 else {
-            showSettings(); errorLabel?.stringValue = "바로가기는 최대 5개예요. 하나를 지운 뒤 다시 놓아 주세요."; errorLabel?.textColor = .systemRed; return
+        guard shortcuts.count < maxShortcuts else {
+            showSettings(); errorLabel?.stringValue = "바로가기는 최대 10개까지 등록할 수 있어요."; errorLabel?.textColor = .systemRed; return
         }
         let rawName = url.isFileURL ? url.deletingPathExtension().lastPathComponent : (url.host?.replacingOccurrences(of: "www.", with: "") ?? "새 링크")
-        shortcuts.append(Shortcut(title: String(rawName.prefix(16)), url: url.absoluteString, symbol: inferredSymbol(for: url), color: shortcutColors[shortcuts.count % shortcutColors.count].1))
+        shortcuts.append(Shortcut(title: String(rawName.prefix(16)), url: url.absoluteString, symbol: inferredSymbol(for: url), color: shortcutColors[shortcuts.count % shortcutColors.count].1, type: "url", target: url.absoluteString))
         saveShortcuts(); wavingUntil = Date().addingTimeInterval(1.6)
     }
     func animate() {
@@ -499,7 +646,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     func closeMenu() {
         guard let panel = menuPanel else { return }
-        menuPanel = nil; cat.excited = false; paletteButtons = []; selectedPaletteButton = nil
+        menuPanel = nil; cat.excited = false; paletteButtons = []; selectedPaletteButton = nil; palettePage = 0
         let shrink = CABasicAnimation(keyPath: "transform.scale")
         shrink.fromValue = 1; shrink.toValue = 0.15; shrink.duration = 0.18
         shrink.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -509,8 +656,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             context.duration = 0.18; panel.animator().alphaValue = 0
         }, completionHandler: { panel.orderOut(nil) })
     }
+    func renderPaletteButtons(in bg: NSView) {
+        func button(_ title: String, symbol: String, tint: NSColor, frame: NSRect, action: Selector, tag: Int = -1, utility: Bool = false) -> PaletteButton {
+            let b = PaletteButton(frame: frame)
+            b.isUtility = utility; b.title = title; b.symbol = symbol; b.tint = tint; b.target = self; b.action = action; b.tag = tag
+            b.isBordered = false; b.wantsLayer = true; b.layer?.masksToBounds = false
+            b.setAccessibilityLabel(title)
+            bg.addSubview(b)
+            return b
+        }
+        paletteButtons = []
+        if palettePage == 1 && shortcuts.count <= shortcutsPerPage { palettePage = 0 }
+        let start = palettePage * shortcutsPerPage
+        let pageItems = Array(shortcuts.dropFirst(start).prefix(shortcutsPerPage))
+        for (index, item) in pageItems.enumerated() {
+            let globalIndex = start + index
+            let angle: CGFloat = pageItems.count == 1 ? .pi/2 : .pi * (160 - CGFloat(index)*140/CGFloat(pageItems.count-1))/180
+            let fallback = URL(string: item.url).map(inferredSymbol) ?? "safari"
+            let tint = colorForKey(item.color ?? shortcutColors[globalIndex % shortcutColors.count].1)
+            let b = button(item.title, symbol: item.symbol ?? fallback, tint: tint, frame: NSRect(x: 170+cos(angle)*118-29, y: 24+sin(angle)*118-28, width: 58, height: 58), action: #selector(openShortcut(_:)), tag: globalIndex)
+            b.toolTip = item.title + " · " + item.url
+            paletteButtons.append(b)
+            let pop = CASpringAnimation(keyPath: "transform.scale")
+            pop.fromValue = 0.01; pop.toValue = 1; pop.stiffness = 250; pop.damping = 14
+            pop.duration = 0.55; pop.beginTime = CACurrentMediaTime()+0.045*Double(index)+0.05
+            pop.fillMode = .backwards
+            b.layer?.add(pop, forKey: "pop")
+        }
+        if shortcuts.isEmpty {
+            let add = button("링크 추가", symbol: "plus", tint: .systemBlue, frame: NSRect(x: 141, y: 114, width: 58, height: 58), action: #selector(showSettings))
+            add.toolTip = "나만의 바로가기 추가"
+        }
+        if shortcuts.count > shortcutsPerPage {
+            if palettePage == 0 {
+                _ = button("더보기", symbol: "ellipsis", tint: .darkGray, frame: NSRect(x: 246, y: 12, width: 44, height: 58), action: #selector(nextPalettePage), utility: true)
+            } else {
+                _ = button("이전", symbol: "arrow.left", tint: .darkGray, frame: NSRect(x: 50, y: 12, width: 44, height: 58), action: #selector(prevPalettePage), utility: true)
+            }
+        }
+        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: 99, y: 12, width: 44, height: 58), action: #selector(showSettings), utility: true)
+        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: 148, y: 12, width: 44, height: 58), action: #selector(showFocusTimer), utility: true)
+        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: 197, y: 12, width: 44, height: 58), action: #selector(dismiss), utility: true)
+    }
+    @objc func nextPalettePage() {
+        palettePage = 1
+        refreshPaletteButtons()
+    }
+    @objc func prevPalettePage() {
+        palettePage = 0
+        refreshPaletteButtons()
+    }
+    func refreshPaletteButtons() {
+        guard let bg = menuPanel?.contentView as? PaletteView else { return }
+        bg.subviews.forEach { $0.removeFromSuperview() }
+        paletteButtons = []
+        renderPaletteButtons(in: bg)
+    }
     func toggleMenu() {
         if menuPanel != nil { closeMenu(); return }
+        palettePage = 0
         cat.excited = true
         let width: CGFloat = 340, height: CGFloat = 210
         guard let rect = (pet.screen ?? NSScreen.main)?.visibleFrame else { return }
@@ -525,35 +729,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView = bg
         bg.layer?.anchorPoint = CGPoint(x: 0.5, y: 0)
         bg.layer?.position = CGPoint(x: width/2, y: 0)
-        func button(_ title: String, symbol: String, tint: NSColor, frame: NSRect, action: Selector, tag: Int = -1, utility: Bool = false) -> PaletteButton {
-            let b = PaletteButton(frame: frame)
-            b.isUtility = utility; b.title = title; b.symbol = symbol; b.tint = tint; b.target = self; b.action = action; b.tag = tag
-            b.isBordered = false; b.wantsLayer = true; b.layer?.masksToBounds = false
-            b.setAccessibilityLabel(title)
-            bg.addSubview(b)
-            return b
-        }
-        paletteButtons = []
-        for (index, item) in shortcuts.enumerated() {
-            let angle: CGFloat = shortcuts.count == 1 ? .pi/2 : .pi * (160 - CGFloat(index)*140/CGFloat(shortcuts.count-1))/180
-            let fallback = URL(string: item.url).map(inferredSymbol) ?? "safari"
-            let tint = colorForKey(item.color ?? shortcutColors[index % shortcutColors.count].1)
-            let b = button(item.title, symbol: item.symbol ?? fallback, tint: tint, frame: NSRect(x: 170+cos(angle)*118-29, y: 24+sin(angle)*118-28, width: 58, height: 58), action: #selector(openShortcut(_:)), tag: index)
-            b.toolTip = item.title + " · " + item.url
-            paletteButtons.append(b)
-            let pop = CASpringAnimation(keyPath: "transform.scale")
-            pop.fromValue = 0.01; pop.toValue = 1; pop.stiffness = 250; pop.damping = 14
-            pop.duration = 0.55; pop.beginTime = CACurrentMediaTime()+0.045*Double(index)+0.05
-            pop.fillMode = .backwards
-            b.layer?.add(pop, forKey: "pop")
-        }
-        if shortcuts.isEmpty {
-            let add = button("링크 추가", symbol: "plus", tint: .systemBlue, frame: NSRect(x: 141, y: 114, width: 58, height: 58), action: #selector(showSettings))
-            add.toolTip = "나만의 바로가기 추가"
-        }
-        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: 99, y: 12, width: 44, height: 58), action: #selector(showSettings), utility: true)
-        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: 148, y: 12, width: 44, height: 58), action: #selector(showFocusTimer), utility: true)
-        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: 197, y: 12, width: 44, height: 58), action: #selector(dismiss), utility: true)
+        renderPaletteButtons(in: bg)
         menuPanel = panel; panel.alphaValue = 0; panel.orderFrontRegardless()
         let spring = CASpringAnimation(keyPath: "transform.scale")
         spring.fromValue = 0.12; spring.toValue = 1; spring.stiffness = 230; spring.damping = 18; spring.duration = 0.55
@@ -648,30 +824,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         label("색", NSRect(x: 610, y: 335, width: 90, height: 20))
         label("순서", NSRect(x: 716, y: 335, width: 80, height: 20))
         titleFields = []; urlFields = []; iconPopups = []; colorPopups = []
-        for i in 0..<5 {
-            let y = CGFloat(298-i*43)
-            let t = NSTextField(frame: NSRect(x: 25, y: y, width: 105, height: 27)); t.placeholderString = "바로가기 \(i+1)"
-            let u = NSTextField(frame: NSRect(x: 138, y: y, width: 350, height: 27)); u.placeholderString = "https://example.com"
+        let scroll = NSScrollView(frame: NSRect(x: 20, y: 95, width: 780, height: 235))
+        scroll.hasVerticalScroller = true
+        scroll.drawsBackground = false
+        scroll.autohidesScrollers = true
+        let doc = FlippedView(frame: NSRect(x: 0, y: 0, width: 760, height: CGFloat(maxShortcuts * 43)))
+        scroll.documentView = doc
+        view.addSubview(scroll)
+
+        for i in 0..<maxShortcuts {
+            let y = CGFloat(i * 43 + 6)
+            let t = NSTextField(frame: NSRect(x: 5, y: y, width: 105, height: 27)); t.placeholderString = "바로가기 \(i+1)"
+            let u = NSTextField(frame: NSRect(x: 118, y: y, width: 350, height: 27)); u.placeholderString = "https://example.com"
             if i < shortcuts.count { t.stringValue = shortcuts[i].title; u.stringValue = shortcuts[i].url }
-            let icons = NSPopUpButton(frame: NSRect(x: 500, y: y, width: 102, height: 27)); icons.addItems(withTitles: shortcutSymbols.map(\.0))
-            let colors = NSPopUpButton(frame: NSRect(x: 610, y: y, width: 96, height: 27)); colors.addItems(withTitles: shortcutColors.map(\.0))
+            let icons = NSPopUpButton(frame: NSRect(x: 480, y: y, width: 102, height: 27)); icons.addItems(withTitles: shortcutSymbols.map(\.0))
+            let colors = NSPopUpButton(frame: NSRect(x: 590, y: y, width: 96, height: 27)); colors.addItems(withTitles: shortcutColors.map(\.0))
             if i < shortcuts.count {
                 let inferred = URL(string: shortcuts[i].url).map(inferredSymbol) ?? "safari"
                 icons.selectItem(at: shortcutSymbols.firstIndex(where: { $0.1 == (shortcuts[i].symbol ?? inferred) }) ?? 0)
                 colors.selectItem(at: shortcutColors.firstIndex(where: { $0.1 == shortcuts[i].color }) ?? (i % shortcutColors.count))
             } else { colors.selectItem(at: i % shortcutColors.count) }
-            let up = NSButton(title: "↑", target: self, action: #selector(moveShortcutRow(_:))); up.tag = i; up.bezelStyle = .rounded; up.frame = NSRect(x: 716, y: y, width: 35, height: 27); up.isEnabled = i > 0
-            let down = NSButton(title: "↓", target: self, action: #selector(moveShortcutRow(_:))); down.tag = 10+i; down.bezelStyle = .rounded; down.frame = NSRect(x: 756, y: y, width: 35, height: 27); down.isEnabled = i < 4
+            let up = NSButton(title: "↑", target: self, action: #selector(moveShortcutRow(_:))); up.tag = i; up.bezelStyle = .rounded; up.frame = NSRect(x: 696, y: y, width: 35, height: 27); up.isEnabled = i > 0
+            let down = NSButton(title: "↓", target: self, action: #selector(moveShortcutRow(_:))); down.tag = 100+i; down.bezelStyle = .rounded; down.frame = NSRect(x: 736, y: y, width: 35, height: 27); down.isEnabled = i < maxShortcuts - 1
             titleFields.append(t); urlFields.append(u); iconPopups.append(icons); colorPopups.append(colors)
-            [t, u, icons, colors, up, down].forEach(view.addSubview)
+            [t, u, icons, colors, up, down].forEach(doc.addSubview)
         }
         let error = NSTextField(wrappingLabelWithString: "앱 실행 예: shortcuts:// · 파일 열기 예: file:///Users/…"); error.frame = NSRect(x: 25, y: 55, width: 680, height: 42); error.textColor = .secondaryLabelColor; view.addSubview(error); errorLabel = error
         let save = NSButton(title: "저장", target: self, action: #selector(saveSettings)); save.bezelStyle = .rounded; save.keyEquivalent = "\r"; save.frame = NSRect(x: 700, y: 20, width: 95, height: 32); view.addSubview(save)
         settings = w; w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
     }
     @objc func moveShortcutRow(_ sender: NSButton) {
-        let from = sender.tag >= 10 ? sender.tag-10 : sender.tag
-        let to = sender.tag >= 10 ? from+1 : from-1
+        let from = sender.tag >= 100 ? sender.tag-100 : sender.tag
+        let to = sender.tag >= 100 ? from+1 : from-1
         guard titleFields.indices.contains(from), titleFields.indices.contains(to) else { return }
         let oldTitle = titleFields[from].stringValue; titleFields[from].stringValue = titleFields[to].stringValue; titleFields[to].stringValue = oldTitle
         let oldURL = urlFields[from].stringValue; urlFields[from].stringValue = urlFields[to].stringValue; urlFields[to].stringValue = oldURL
@@ -680,7 +864,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc func saveSettings() {
         var new: [Shortcut] = []
-        for i in 0..<5 {
+        for i in 0..<maxShortcuts {
             let title = titleFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             var raw = urlFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if title.isEmpty && raw.isEmpty { continue }
@@ -692,7 +876,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             let symbol = shortcutSymbols[max(0, iconPopups[i].indexOfSelectedItem)].1
             let color = shortcutColors[max(0, colorPopups[i].indexOfSelectedItem)].1
-            new.append(Shortcut(title: String(title.prefix(16)), url: url.absoluteString, symbol: symbol, color: color))
+            new.append(Shortcut(title: String(title.prefix(16)), url: url.absoluteString, symbol: symbol, color: color, type: "url", target: url.absoluteString))
         }
         shortcuts = new
         saveShortcuts()

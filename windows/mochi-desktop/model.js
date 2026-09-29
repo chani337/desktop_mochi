@@ -13,12 +13,22 @@ function normalizeURL(raw) {
   if (['https:', 'http:'].includes(url.protocol) && !url.hostname) throw new Error('웹 주소를 확인해 주세요.');
   return url.href;
 }
+const MAX_SHORTCUTS = 10;
+const SHORTCUTS_PER_PAGE = 5;
 function validateShortcuts(rows) {
-  if (!Array.isArray(rows) || rows.length > 5) throw new Error('바로가기는 최대 5개예요.');
-  return rows.filter(r => r && (r.title?.trim() || r.url?.trim())).map((r, i) => {
-    const url = normalizeURL(r.url);
-    return { title: String(r.title?.trim() || new URL(url).hostname || '바로가기').slice(0, 24), url,
-      icon: ICONS.includes(r.icon) ? r.icon : inferIcon(url), color: COLORS.includes(r.color) ? r.color : COLORS[i] };
+  if (!Array.isArray(rows) || rows.length > MAX_SHORTCUTS) throw new Error('바로가기는 최대 10개예요.');
+  return rows.filter(r => r && (r.title?.trim() || r.name?.trim() || r.url?.trim() || r.target?.trim())).map((r, i) => {
+    const rawUrl = r.url || r.target;
+    const url = normalizeURL(rawUrl);
+    const title = String(r.title?.trim() || r.name?.trim() || new URL(url).hostname || '바로가기').slice(0, 24);
+    return {
+      title,
+      url,
+      type: r.type || 'url',
+      target: r.target || url,
+      icon: ICONS.includes(r.icon) ? r.icon : inferIcon(url),
+      color: COLORS.includes(r.color) ? r.color : COLORS[i % COLORS.length]
+    };
   });
 }
 function inferIcon(url) { return /youtu/.test(url) ? 'play' : /spreadsheets/.test(url) ? 'table' : url.startsWith('file:') ? 'folder' : 'web'; }
@@ -43,4 +53,9 @@ function resizedPetBounds(bounds, area, scale) {
   const size=petSize(scale);
   return {...size,x:Math.round(Math.max(area.x,Math.min(bounds.x+(bounds.width-size.width)/2,area.x+area.width-size.width))),y:Math.round(Math.max(area.y,Math.min(bounds.y+bounds.height-size.height,area.y+area.height-size.height)))};
 }
-module.exports = { petSize, resizedPetBounds, COLORS, ICONS, normalizeURL, validateShortcuts, inferIcon, durationSeconds, formatTime, palettePoints, selectedShortcut };
+function getShortcutPage(shortcuts, page = 0) {
+  if (!Array.isArray(shortcuts)) return [];
+  const start = Math.max(0, page) * SHORTCUTS_PER_PAGE;
+  return shortcuts.slice(start, start + SHORTCUTS_PER_PAGE);
+}
+module.exports = { MAX_SHORTCUTS, SHORTCUTS_PER_PAGE, getShortcutPage, petSize, resizedPetBounds, COLORS, ICONS, normalizeURL, validateShortcuts, inferIcon, durationSeconds, formatTime, palettePoints, selectedShortcut };

@@ -278,6 +278,28 @@ async function smokeTest() {
   assert.equal(dropOver.ok, false);
   assert.equal(state.shortcuts.length, 10);
 
+  // Exercise app picker through the real preload bridge and renderer.
+  await prefs.webContents.executeJavaScript(`window.mochi.call('save',[])`);
+  await new Promise(resolve=>setTimeout(resolve,100));
+  showSettings('links');
+  const installed=await prefs.webContents.executeJavaScript(`(async()=>{await document.querySelector('#openAppPicker').onclick();const item=document.querySelector('.app-item');if(!item)throw new Error(document.querySelector('#appList').textContent);const target=item.querySelector('.app-path').textContent;item.click();await document.querySelector('#save').onclick();return target;})()`);
+  assert.equal(state.shortcuts.length,1);assert.equal(fileURLToPath(state.shortcuts[0].url),installed);
+  const realDialog=dialog.showOpenDialog, realOpen=shell.openPath;
+  const pickedPath=path.join(app.getPath('temp'),'테스트 앱 #1%.exe');
+  let openedPath;
+  try {
+    dialog.showOpenDialog=async()=>({canceled:false,filePaths:[pickedPath]});
+    await prefs.webContents.executeJavaScript(`(async()=>{await document.querySelector('#browseCustomFile').onclick();await document.querySelector('#save').onclick();})()`);
+    assert.equal(state.shortcuts.length,2);assert.equal(fileURLToPath(state.shortcuts[1].url),pickedPath);
+    shell.openPath=async p=>{openedPath=p;return '';};
+    await prefs.webContents.executeJavaScript(`window.mochi.call('open',1)`);
+    assert.equal(openedPath,pickedPath);
+    load();assert.equal(fileURLToPath(state.shortcuts[1].url),pickedPath);
+    dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});
+    await prefs.webContents.executeJavaScript(`document.querySelector('#browseCustomFile').onclick()`);
+    assert.equal(state.shortcuts.length,2);
+  } finally {dialog.showOpenDialog=realDialog;shell.openPath=realOpen;}
+  console.log('APP REGISTRATION PASS: installed apps, picker, select, save, restore, exact launch path, cancel');
   const settingsShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-settings.png'),settingsShot.toPNG());
   const shot=await palette.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-palette.png'),shot.toPNG());
   console.log('SMOKE PASS: assets, renderer IPC, timer, palette, settings, size control, persistence, 0/1/5/6/7/10 shortcuts, pagination, reset, drop expand, max 10 limit.');app.quit();

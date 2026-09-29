@@ -4,7 +4,7 @@ const ICONS = ['web', 'play', 'table', 'folder', 'star', 'check', 'music'];
 function normalizeURL(raw) {
   if (typeof raw !== 'string' || raw.length > 8192) throw new Error('주소를 확인해 주세요.');
   raw = raw.trim();
-  if (/^[a-z]:[\\/]/i.test(raw)) raw = 'file:///' + raw.replaceAll('\\', '/');
+  if (/^[a-z]:[\\/]/i.test(raw)) raw = 'file:///' + raw.replaceAll('\\', '/').split('/').map((part,i)=>i===0?part:encodeURIComponent(part)).join('/');
   else if (raw.startsWith('/')) raw = pathToFileURL(raw).href;
   else if (!/^[a-z][a-z\d+.-]*:/i.test(raw)) raw = 'https://' + raw;
   let url; try { url = new URL(raw); } catch { throw new Error('올바른 주소를 입력해 주세요.'); }

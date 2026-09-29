@@ -2,6 +2,22 @@ import AppKit
 import QuartzCore
 import UniformTypeIdentifiers
 
+let isTestRun = CommandLine.arguments.contains(where: { $0.hasSuffix("-test") })
+let appPreferences = isTestRun ? UserDefaults(suiteName: "local.desktopcat.registration-tests")! : UserDefaults.standard
+
+func shortcutURL(_ input: String) -> URL? {
+    let raw = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !raw.isEmpty else { return nil }
+    if raw.hasPrefix("/") || raw.hasPrefix("~/") {
+        return URL(fileURLWithPath: (raw as NSString).expandingTildeInPath)
+    }
+    guard let url = URL(string: raw.contains(":") ? raw : "https://" + raw),
+          let scheme = url.scheme, !["javascript", "data"].contains(scheme.lowercased()),
+          !(scheme == "https" || scheme == "http") || !(url.host ?? "").isEmpty else { return nil }
+    return url
+}
+
+
 final class PaletteView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let arc = NSBezierPath()
@@ -312,7 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var settings: NSWindow?
     var sizeLabel: NSTextField?
     var petScale = 100
-    let sizeDefaults = CommandLine.arguments.contains("--size-test") ? UserDefaults(suiteName: "local.desktopcat.size-tests")! : UserDefaults.standard
+    let sizeDefaults = CommandLine.arguments.contains("--size-test") ? UserDefaults(suiteName: "local.desktopcat.size-tests")! : appPreferences
 
     func savedPetScale() -> Int {
         let value = sizeDefaults.integer(forKey: "petScalePercent")
@@ -493,10 +509,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let key = "DesktopCat.shortcuts.v1"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if isTestRun { appPreferences.removePersistentDomain(forName: "local.desktopcat.registration-tests") }
         setupMainMenu()
-        if let data = UserDefaults.standard.data(forKey: key), let saved = try? JSONDecoder().decode([Shortcut].self, from: data) { shortcuts = Array(saved.prefix(maxShortcuts)) }
+        if let data = appPreferences.data(forKey: key), let saved = try? JSONDecoder().decode([Shortcut].self, from: data) { shortcuts = Array(saved.prefix(maxShortcuts)) }
         else { shortcuts = [Shortcut(title: "검색", url: "https://www.google.com", symbol: "safari", color: "blue"), Shortcut(title: "YouTube", url: "https://www.youtube.com", symbol: "play.fill", color: "red")] }
-        walking = UserDefaults.standard.object(forKey: "walking") as? Bool ?? true
+        walking = appPreferences.object(forKey: "walking") as? Bool ?? true
         pet = PetPanel(contentRect: NSRect(x: 200, y: 100, width: 57, height: 60), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         pet.isOpaque = false; pet.backgroundColor = .clear; pet.hasShadow = false
         pet.level = .floating; pet.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]; pet.hidesOnDeactivate = false
@@ -523,6 +540,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatus()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
         if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
+        if CommandLine.arguments.contains("--registration-test") { testAppRegistration(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--shortcut-test") { testShortcuts(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--snapshot") { snapshot(); NSApp.terminate(nil) }
         if CommandLine.arguments.contains("--settings") { showSettings() }
@@ -580,7 +598,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastInteraction = Date(); cat.pose = .normal; cat.focusText = nil
     }
     func saveShortcuts() {
-        if let data = try? JSONEncoder().encode(shortcuts) { UserDefaults.standard.set(data, forKey: key) }
+        if let data = try? JSONEncoder().encode(shortcuts) { appPreferences.set(data, forKey: key) }
     }
     func inferredSymbol(for url: URL) -> String {
         let raw = url.absoluteString.lowercased()
@@ -739,7 +757,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc func dismiss() { closeMenu() }
     @objc func openShortcut(_ sender: NSButton) {
-        guard shortcuts.indices.contains(sender.tag), let url = URL(string: shortcuts[sender.tag].url) else { return }
+        guard shortcuts.indices.contains(sender.tag), let url = shortcutURL(shortcuts[sender.tag].url) else { return }
         if !NSWorkspace.shared.open(url) {
             let alert = NSAlert(); alert.messageText = "바로가기를 열 수 없어요"; alert.informativeText = "주소와 연결된 앱을 확인해 주세요.\n\(url.absoluteString)"; NSApp.activate(ignoringOtherApps: true); alert.runModal()
         }
@@ -765,7 +783,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let m = NSTextField(frame: NSRect(x: 205, y: 151, width: 100, height: 40))
         h.font = .monospacedDigitSystemFont(ofSize: 26, weight: .medium); m.font = h.font
         h.alignment = .center; m.alignment = .center
-        let stored = UserDefaults.standard.integer(forKey: "focusDurationMinutes")
+        let stored = appPreferences.integer(forKey: "focusDurationMinutes")
         let minutes = stored > 0 && stored < 1440 ? stored : 25
         h.stringValue = String(minutes/60); m.stringValue = String(minutes%60)
         h.setAccessibilityLabel("시간"); m.setAccessibilityLabel("분")
@@ -787,7 +805,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         focusError?.stringValue = ""; touch()
         focusEnd = Date().addingTimeInterval(TimeInterval((h*60+m)*60))
-        UserDefaults.standard.set(h*60+m, forKey: "focusDurationMinutes")
+        appPreferences.set(h*60+m, forKey: "focusDurationMinutes")
         focusStartButton?.title = "새 시간으로 시작"
     }
     @objc func stopFocus() {
@@ -795,7 +813,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focusStatus?.stringValue = "타이머를 종료했어요."; focusError?.stringValue = ""; focusStartButton?.title = "시작"
         paletteTimerButton?.title = "타이머"; paletteTimerButton?.needsDisplay = true
     }
-    @objc func toggleWalking() { walking.toggle(); UserDefaults.standard.set(walking, forKey: "walking"); if menuPanel != nil { closeMenu(); toggleMenu() } }
+    @objc func toggleWalking() { walking.toggle(); appPreferences.set(walking, forKey: "walking"); if menuPanel != nil { closeMenu(); toggleMenu() } }
     @objc func bringBack() { closeMenu(); if let r = NSScreen.main?.visibleFrame { pet.setFrameOrigin(NSPoint(x: r.midX-pet.frame.width/2, y: r.minY+40)) }; pet.orderFrontRegardless() }
     @objc func quit() { NSApp.terminate(nil) }
     @objc func showSettings() {
@@ -855,31 +873,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let save = NSButton(title: "저장", target: self, action: #selector(saveSettings)); save.bezelStyle = .rounded; save.keyEquivalent = "\r"; save.frame = NSRect(x: 700, y: 20, width: 95, height: 32); view.addSubview(save)
         settings = w; w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
     }
-    @objc func chooseInstalledApp() {
+    func appSelectionPanel() -> NSOpenPanel {
         let panel = NSOpenPanel()
         panel.title = "바로가기로 추가할 앱 또는 파일 선택"
-        panel.prompt = "선택"
+        panel.prompt = "추가"
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.canChooseFiles = true
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
+        panel.treatsFilePackagesAsDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.application, .item]
-        if panel.runModal() == .OK, let url = panel.url {
-            let name = url.deletingPathExtension().lastPathComponent
-            for i in 0..<maxShortcuts {
-                if urlFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    titleFields[i].stringValue = String(name.prefix(24))
-                    urlFields[i].stringValue = url.absoluteString
-                    let inferred = inferredSymbol(for: url)
-                    iconPopups[i].selectItem(at: shortcutSymbols.firstIndex(where: { $0.1 == inferred }) ?? 0)
-                    errorLabel?.stringValue = "'\(name)' 바로가기를 추가했어요. [저장]을 눌러주세요."
-                    errorLabel?.textColor = .labelColor
-                    return
-                }
-            }
-            errorLabel?.stringValue = "최대 10개까지 등록할 수 있어요. 빈 줄이 없어요."
-            errorLabel?.textColor = .systemRed
+        return panel
+    }
+    @objc func chooseInstalledApp() {
+        guard let settings else { return }
+        let panel = appSelectionPanel()
+        panel.beginSheetModal(for: settings) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.insertSelectedApp(url)
         }
+    }
+    func insertSelectedApp(_ url: URL) {
+        let name = url.deletingPathExtension().lastPathComponent
+        guard let i = urlFields.indices.first(where: { urlFields[$0].stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            errorLabel?.stringValue = "최대 10개까지 등록할 수 있어요. 빈 줄이 없어요."
+            errorLabel?.textColor = .systemRed; return
+        }
+        titleFields[i].stringValue = String(name.prefix(24))
+        urlFields[i].stringValue = url.absoluteString
+        iconPopups[i].selectItem(at: shortcutSymbols.firstIndex(where: { $0.1 == inferredSymbol(for: url) }) ?? 0)
+        urlFields[i].scrollToVisible(urlFields[i].bounds)
+        settings?.makeFirstResponder(titleFields[i])
+        errorLabel?.stringValue = "'\(name)' 추가 준비 완료. [저장]을 누르면 등록돼요."
+        errorLabel?.textColor = .labelColor
+    }
+    func testAppRegistration() {
+        defer { appPreferences.removePersistentDomain(forName: "local.desktopcat.registration-tests") }
+        shortcuts = []; showSettings()
+        let panel = appSelectionPanel()
+        precondition(panel.canChooseDirectories && !panel.treatsFilePackagesAsDirectories)
+        let url = URL(fileURLWithPath: "/Applications/테스트 앱 #1%.app")
+        insertSelectedApp(url); saveSettings()
+        precondition(shortcuts.count == 1 && shortcutURL(shortcuts[0].url)?.path == url.path)
+        let data = appPreferences.data(forKey: key)!
+        let restored = try! JSONDecoder().decode([Shortcut].self, from: data)
+        precondition(restored[0].url == url.absoluteString)
+        urlFields[0].stringValue = url.path; saveSettings()
+        precondition(shortcutURL(shortcuts[0].url)?.path == url.path)
+        precondition(shortcutURL("javascript:alert(1)") == nil)
+        print("REGISTRATION TEST PASS: app package selection, insertion, special characters, raw path, save and reload")
     }
     @objc func moveShortcutRow(_ sender: NSButton) {
         let from = sender.tag >= 100 ? sender.tag-100 : sender.tag
@@ -894,12 +935,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var new: [Shortcut] = []
         for i in 0..<maxShortcuts {
             let title = titleFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            var raw = urlFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let raw = urlFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if title.isEmpty && raw.isEmpty { continue }
-            if !raw.contains(":") && !raw.isEmpty { raw = "https://" + raw }
-            guard !title.isEmpty, let url = URL(string: raw), let scheme = url.scheme, !scheme.isEmpty,
-                  !["javascript", "data"].contains(scheme.lowercased()),
-                  !(scheme == "https" || scheme == "http") || !(url.host ?? "").isEmpty else {
+            guard !title.isEmpty, let url = shortcutURL(raw) else {
                 errorLabel?.stringValue = "\(i+1)번째 줄의 이름과 주소를 확인해 주세요."; errorLabel?.textColor = .systemRed; return
             }
             let symbol = shortcutSymbols[max(0, iconPopups[i].indexOfSelectedItem)].1

@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.2.1-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.2.2-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.1-win-x64.zip)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.2-win-x64.zip)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -54,7 +54,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.2.1-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.1-win-x64.zip)
+1. [Mochi-2.2.2-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.2-win-x64.zip)
 2. ZIP의 **전체 압축을 풀어주세요.**
 3. 폴더 안의 `Mochi.exe`를 실행합니다.
 
@@ -73,7 +73,7 @@
 3. 아이콘, 색상, 순서를 고른 뒤 저장합니다.
 4. 팔레트에서 해당 아이콘을 클릭하면 연결된 사이트나 파일이 열립니다.
 
-브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있고, 설정의 **[+ 설치된 앱 가져오기]** 버튼으로 내 컴퓨터에 설치된 앱을 검색해 바로 등록할 수도 있습니다. 바로가기는 최대 **10개**까지 지원하며, 5개를 초과하면 '...' 버튼으로 2페이지에서 확인할 수 있습니다. Mac과 Windows의 설정은 각각 저장됩니다.
+브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있고, 설정의 **[+ 설치된 앱 가져오기]** 버튼으로 내 컴퓨터에 설치된 앱을 선택한 뒤 **저장**을 눌러 등록할 수도 있습니다. Windows는 검색 목록과 파일 직접 찾기를 제공하고, Mac은 응용 프로그램 폴더에서 선택합니다. 바로가기는 최대 **10개**까지 지원하며, 5개를 초과하면 '...' 버튼으로 2페이지에서 확인할 수 있습니다. Mac과 Windows의 설정은 각각 저장됩니다.
 
 ### 모찌 크기 바꾸기 · macOS / Windows
 
@@ -164,6 +164,14 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.2.2 · 2026.09.29 — 앱 등록 오류 수정**
+
+- Windows 앱 목록 조회와 파일 선택 요청이 차단되던 연결 누락 수정
+- 공백·한글·`#`·`%`가 포함된 Windows 앱 경로 보존
+- Mac 앱 선택창을 설정창에 연결하고 앱 패키지 선택 및 직접 입력 경로 처리 개선
+- 앱 선택 후 저장·복원과 기존 10개 바로가기·페이지 전환 회귀 테스트 추가
+
 
 **v2.2.1 · 2026.09.29 — 설치된 앱 가져오기 기능 추가**
 

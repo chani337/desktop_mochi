@@ -2,6 +2,18 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.2.2] - 2026-09-29
+
+### 수정
+
+- Windows preload 허용 목록에 앱 조회 및 파일 선택 요청 추가
+- Windows 앱 경로의 공백·한글·특수문자 인코딩 보존
+- 앱 목록의 이름과 경로를 HTML 대신 텍스트로 표시
+- macOS 앱 선택창을 설정창에 연결하고 앱 패키지 및 폴더 선택 허용
+- macOS에서 직접 입력한 로컬 경로를 파일 URL로 저장
+- Mac에서 선택한 앱 행으로 스크롤하고 저장 필요 안내 표시
+- 테스트 설정을 사용자 설정과 분리하고 앱 등록 회귀 검사 추가
+
 ## [2.2.1] - 2026-09-29
 
 ### 추가
@@ -97,3 +109,5 @@
 [2.1.2]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.2
 
 [2.2.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.2.0
+
+[2.2.2]: https://github.com/chani337/desktop_mochi/releases/tag/v2.2.2

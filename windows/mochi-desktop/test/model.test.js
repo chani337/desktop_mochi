@@ -55,3 +55,9 @@ test('inferIcon accurately maps app keywords to icons', () => {
   assert.equal(inferIcon('https://example.com', '즐겨찾기'), 'star');
   assert.equal(inferIcon('https://example.com', '일반웹'), 'web');
 });
+
+test('Windows application paths retain spaces, Unicode, hashes and percent signs',()=>{
+ const url=normalizeURL('C:/Program Files/테스트 #1%/앱.exe');
+ assert.equal(new URL(url).hash,'');
+ assert.equal(decodeURIComponent(new URL(url).pathname),'/C:/Program Files/테스트 #1%/앱.exe');
+});

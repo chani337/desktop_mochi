@@ -58,7 +58,9 @@ if(view==='pet') {
     if(!filtered.length){list.innerHTML='<div class="app-list-empty">검색 결과가 없어요.</div>';return;}
     for(const app of filtered){
       const item=document.createElement('div');item.className='app-item';item.tabIndex=0;
-      item.innerHTML=`<span class="app-name">${app.name}</span><span class="app-path" title="${app.target}">${app.target}</span>`;
+      const name=document.createElement('span'),target=document.createElement('span');
+      name.className='app-name';name.textContent=app.name;
+      target.className='app-path';target.textContent=app.target;target.title=app.target;item.append(name,target);
       const select=()=>{
         const rows=collectRows();let idx=rows.findIndex(r=>!r.title.trim()&&!r.url.trim());
         if(idx===-1)idx=rows.findIndex(r=>!r.url.trim());

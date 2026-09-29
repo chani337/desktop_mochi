@@ -8,7 +8,7 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.1.1-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.2-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
@@ -164,6 +164,13 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.1.2 · 2026.09.29 — macOS 팔레트 가독성 개선**
+
+- 설정·타이머·닫기에 밝은 버튼 배경과 진한 아이콘 적용
+- 흰색 글자와 어두운 라벨 배경으로 바탕화면 색에 상관없이 식별 가능
+- Windows 파일은 기존 v2.1.0 유지
+
 
 **v2.1.1 · 2026.09.29 — macOS 크기 조절**
 

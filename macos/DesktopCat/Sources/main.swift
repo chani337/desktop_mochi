@@ -21,6 +21,7 @@ final class PaletteView: NSView {
 final class PaletteButton: NSButton {
     var symbol = "link"
     var tint = NSColor.systemBlue
+    var isUtility = false
     var hovered = false
     private var tracking: NSTrackingArea?
     override func updateTrackingAreas() {
@@ -43,13 +44,27 @@ final class PaletteButton: NSButton {
     }
     override func draw(_ dirtyRect: NSRect) {
         let circle = NSBezierPath(ovalIn: NSRect(x: (bounds.width-36)/2, y: 19, width: 36, height: 36))
-        tint.withAlphaComponent(hovered ? 0.23 : 0.10).setFill(); circle.fill()
+        if isUtility {
+            NSColor(calibratedWhite: hovered ? 0.90 : 0.98, alpha: 1).setFill(); circle.fill()
+            NSColor(calibratedWhite: 0.72, alpha: 1).setStroke(); circle.lineWidth = 0.75; circle.stroke()
+        } else {
+            tint.withAlphaComponent(hovered ? 0.23 : 0.10).setFill(); circle.fill()
+        }
         let config = NSImage.SymbolConfiguration(pointSize: 20, weight: .medium)
             .applying(NSImage.SymbolConfiguration(paletteColors: [tint]))
         let icon = NSImage(systemSymbolName: symbol, accessibilityDescription: title)?.withSymbolConfiguration(config)
         icon?.draw(in: NSRect(x: (bounds.width-22)/2, y: 26, width: 22, height: 22))
         let style = NSMutableParagraphStyle(); style.alignment = .center; style.lineBreakMode = .byTruncatingTail
-        (title as NSString).draw(in: NSRect(x: 0, y: 0, width: bounds.width, height: 17), withAttributes: [.font: NSFont.systemFont(ofSize: 10, weight: .medium), .foregroundColor: NSColor(calibratedWhite: 0.2, alpha: 1), .paragraphStyle: style])
+        var attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 10, weight: isUtility ? .semibold : .medium), .foregroundColor: NSColor(calibratedWhite: 0.2, alpha: 1), .paragraphStyle: style]
+        if isUtility {
+            // A dark label backing keeps white text legible over light windows too.
+            NSColor(calibratedWhite: 0.12, alpha: 0.88).setFill()
+            NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: bounds.width, height: 17), xRadius: 6, yRadius: 6).fill()
+            let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.7)
+            shadow.shadowBlurRadius = 1; shadow.shadowOffset = NSSize(width: 0, height: -1)
+            attributes[.foregroundColor] = NSColor.white; attributes[.shadow] = shadow
+        }
+        (title as NSString).draw(in: NSRect(x: 0, y: 0, width: bounds.width, height: 17), withAttributes: attributes)
     }
 }
 
@@ -510,9 +525,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView = bg
         bg.layer?.anchorPoint = CGPoint(x: 0.5, y: 0)
         bg.layer?.position = CGPoint(x: width/2, y: 0)
-        func button(_ title: String, symbol: String, tint: NSColor, frame: NSRect, action: Selector, tag: Int = -1) -> PaletteButton {
+        func button(_ title: String, symbol: String, tint: NSColor, frame: NSRect, action: Selector, tag: Int = -1, utility: Bool = false) -> PaletteButton {
             let b = PaletteButton(frame: frame)
-            b.title = title; b.symbol = symbol; b.tint = tint; b.target = self; b.action = action; b.tag = tag
+            b.isUtility = utility; b.title = title; b.symbol = symbol; b.tint = tint; b.target = self; b.action = action; b.tag = tag
             b.isBordered = false; b.wantsLayer = true; b.layer?.masksToBounds = false
             b.setAccessibilityLabel(title)
             bg.addSubview(b)
@@ -536,9 +551,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let add = button("링크 추가", symbol: "plus", tint: .systemBlue, frame: NSRect(x: 141, y: 114, width: 58, height: 58), action: #selector(showSettings))
             add.toolTip = "나만의 바로가기 추가"
         }
-        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: 99, y: 12, width: 44, height: 58), action: #selector(showSettings))
-        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: 148, y: 12, width: 44, height: 58), action: #selector(showFocusTimer))
-        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: 197, y: 12, width: 44, height: 58), action: #selector(dismiss))
+        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: 99, y: 12, width: 44, height: 58), action: #selector(showSettings), utility: true)
+        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: 148, y: 12, width: 44, height: 58), action: #selector(showFocusTimer), utility: true)
+        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: 197, y: 12, width: 44, height: 58), action: #selector(dismiss), utility: true)
         menuPanel = panel; panel.alphaValue = 0; panel.orderFrontRegardless()
         let spring = CASpringAnimation(keyPath: "transform.scale")
         spring.fromValue = 0.12; spring.toValue = 1; spring.stiffness = 230; spring.damping = 18; spring.duration = 0.55

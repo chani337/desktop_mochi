@@ -2,6 +2,14 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.1.2] - 2026-09-29
+
+### 수정
+
+- macOS 설정·타이머·닫기 버튼의 어두운 배경 위 낮은 대비 개선
+- 밝은 불투명 원형 버튼, 진한 아이콘, 흰색 글자와 어두운 라벨 배경 적용
+- Windows 파일은 기존 2.1.0 유지
+
 ## [2.1.1] - 2026-09-29
 
 ### 추가
@@ -65,3 +73,5 @@
 [2.1.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.0
 
 [2.1.1]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.1
+
+[2.1.2]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.2

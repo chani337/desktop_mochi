@@ -54,7 +54,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.1.0-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.1.0-win-x64.zip)
+1. [Mochi-2.2.0-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.0-win-x64.zip)
 2. ZIP의 **전체 압축을 풀어주세요.**
 3. 폴더 안의 `Mochi.exe`를 실행합니다.
 

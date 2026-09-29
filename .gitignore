@@ -6,3 +6,5 @@ node_modules
 outputs/
 dist/
 smoke-*.png
+macos/DesktopCat/Vendor/
+release/

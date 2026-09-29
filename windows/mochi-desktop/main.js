@@ -1,5 +1,8 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Notification, dialog } = require('electron');
 const fs = require('node:fs');
+const { backupSettings } = require('./backups');
+const { setupUpdates } = require('./updates');
+let updates;
 const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
 const { MAX_SHORTCUTS, SHORTCUTS_PER_PAGE, COLORS, petSize, resizedPetBounds, validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
@@ -7,12 +10,14 @@ let pet, palette, prefs, tray, file, state, dragging, holding = false, highlight
 let lastTouch = Date.now(), waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
 const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, scale:150, duration:25, end:null };
 const smoke = process.argv.includes('--smoke-test');
+// Keep the portable and installed editions on the existing settings directory.
+app.setPath('userData',path.join(app.getPath('appData'),'mochi-desktop'));
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'mochi-smoke-profile'));
 if (!app.requestSingleInstanceLock()) { app.quit(); } else {
   app.on('second-instance', () => { pet?.showInactive(); showSettings('timer'); });
   app.whenReady().then(start).catch(error=>{console.error(error);app.exit(1);});
 }
-function save() { fs.mkdirSync(path.dirname(file),{recursive:true}); const tmp=file+'.tmp'; fs.writeFileSync(tmp,JSON.stringify(state,null,2)); fs.renameSync(tmp,file); }
+function save() { backupSettings(file); fs.mkdirSync(path.dirname(file),{recursive:true}); const tmp=file+'.tmp'; fs.writeFileSync(tmp,JSON.stringify(state,null,2)); fs.renameSync(tmp,file); }
 function load() {
   file=path.join(app.getPath('userData'),'settings.json');
   try { const s=JSON.parse(fs.readFileSync(file,'utf8')); state={...defaults,...s,shortcuts:validateShortcuts(s.shortcuts)}; }
@@ -146,9 +151,26 @@ function getInstalledApps() {
   }
   return apps.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
 }
+async function restoreSettings() {
+  const {canceled,filePaths}=await dialog.showOpenDialog({title:'모찌 설정 백업 선택',defaultPath:path.join(app.getPath('userData'),'backups'),filters:[{name:'모찌 설정',extensions:['json']}],properties:['openFile']});
+  if(canceled||!filePaths.length)return;
+  try {
+    const data=JSON.parse(fs.readFileSync(filePaths[0],'utf8'));
+    const restored={...defaults,shortcuts:validateShortcuts(data.shortcuts),scale:data.scale??defaults.scale,duration:data.duration??defaults.duration,end:null,walking:false};
+    petSize(restored.scale);
+    if(!Number.isInteger(restored.duration)||restored.duration<1||restored.duration>1439)throw new Error('Invalid duration');
+    const result=await dialog.showMessageBox({type:'question',message:'선택한 백업으로 설정을 복원할까요?',detail:'현재 설정은 먼저 백업합니다.',buttons:['복원','취소'],cancelId:1,defaultId:1});
+    if(result.response!==0)return;
+    backupSettings(file);
+    state=restored;save();
+    showMenu(false);const p=pet.getBounds();pet.setBounds(resizedPetBounds(p,screen.getDisplayMatching(p).workArea,state.scale));
+    if(prefs&&!prefs.isDestroyed()){prefs.destroy();prefs=null;}
+    send();updateTray();showSettings('links');
+  } catch {dialog.showErrorBox('설정을 복원하지 못했어요','백업 파일, 저장 공간과 폴더 권한을 확인해 주세요.');}
+}
 function updateTray() {
   if(!tray)return;
-  tray.setContextMenu(Menu.buildFromTemplate([{label:'모찌 데려오기',click:()=>{home();pet.showInactive();touch();}},{label:'집중 타이머…',click:()=>showSettings('timer')},{label:'바로가기 설정…',click:()=>showSettings('links')},{label:state.walking?'산책 멈춤':'산책 시작',click:()=>{state.walking=!state.walking;touch();save();send();updateTray();}},{type:'separator'},{label:'종료',click:()=>app.quit()}]));
+  tray.setContextMenu(Menu.buildFromTemplate([{label:'모찌 데려오기',click:()=>{home();pet.showInactive();touch();}},{label:'집중 타이머…',click:()=>showSettings('timer')},{label:'바로가기 설정…',click:()=>showSettings('links')},{label:state.walking?'산책 멈춤':'산책 시작',click:()=>{state.walking=!state.walking;touch();save();send();updateTray();}},{type:'separator'},{label:'업데이트 확인…',click:()=>updates.check(true)},{label:'설정 백업 폴더 열기',click:async()=>{const dir=path.join(app.getPath('userData'),'backups');fs.mkdirSync(dir,{recursive:true});await shell.openPath(dir);}},{label:'설정 복원…',click:()=>restoreSettings()},{type:'separator'},{label:'종료',click:()=>app.quit()}]));
 }
 function tick() {
   if(!pet||pet.isDestroyed())return;
@@ -160,7 +182,11 @@ function tick() {
   if(++ticks%5===0){send();tray?.setToolTip(state.end?'모찌 · '+publicState().remaining:'모찌 · 바로가기와 집중 타이머');if(process.platform==='darwin')tray?.setTitle(state.end?publicState().remaining:'');}
 }
 async function start() {
-  load();setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,220);home();
+  load();
+  try {backupSettings(file);} catch(error) {console.error('Settings backup:',error.message);}
+  const installed=!smoke && process.platform==='win32' && app.isPackaged && fs.existsSync(path.join(path.dirname(process.execPath),'Uninstall Mochi.exe'));
+  updates=setupUpdates({updater:installed?require('electron-updater').autoUpdater:null,dialog,backup:()=>backupSettings(file),installed,version:app.getVersion()});
+  setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,220);home();
   pet.once('ready-to-show',()=>pet.showInactive());
   try {const icon=nativeImage.createFromPath(path.join(__dirname,'assets','mochi.png')).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('모찌');tray.on('double-click',()=>showSettings('timer'));updateTray();}catch(error){console.error('Tray:',error.message);}
   app.dock?.hide();setInterval(tick,40);

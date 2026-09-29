@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.2.2-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.3.0-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.2-win-x64.zip)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.3.0.exe)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -54,13 +54,28 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.2.2-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.2-win-x64.zip)
-2. ZIP의 **전체 압축을 풀어주세요.**
-3. 폴더 안의 `Mochi.exe`를 실행합니다.
+1. [Mochi-Setup-2.3.0.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.3.0.exe)
+2. 기존 모찌가 실행 중이면 트레이 메뉴에서 **종료**합니다.
+3. 설치 파일을 실행하고 안내에 따라 설치한 뒤 모찌를 실행합니다.
 
-별도 설치 과정 없이 실행하는 포터블 앱입니다. **EXE만 따로 옮기지 말고 폴더 전체를 보관**하세요. 서명되지 않은 앱이라 Windows에서 경고가 표시될 수 있습니다. 트레이 아이콘이 안 보이면 작업표시줄의 숨겨진 아이콘 목록을 확인하세요.
+**v2.2.2 이하 또는 ZIP 버전은 설치형을 한 번 직접 설치해야 자동 업데이트를 사용할 수 있습니다.** 기존 `%APPDATA%\mochi-desktop` 설정을 그대로 사용합니다. 서명되지 않은 설치 파일이라 Windows에서 경고가 표시될 수 있습니다.
 
-**새 버전으로 업데이트:** 다운로드 버튼에서 최신 ZIP을 받은 뒤, 트레이 메뉴에서 기존 모찌를 **종료**하세요. 새 ZIP을 별도 폴더에 전부 풀고 `Mochi.exe`를 실행하면 됩니다. 자동 업데이트 방식은 아니며, 기존 바로가기 설정은 그대로 유지됩니다.
+[포터블 ZIP](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.3.0-win-x64.zip)도 제공합니다. ZIP은 전체 압축을 풀어 실행하며 **자동 교체를 지원하지 않습니다.**
+
+### 자동 업데이트 · v2.3.0부터
+
+- **맥:** 앱을 **응용 프로그램** 폴더에 옮겨 실행하세요. Sparkle가 새 릴리스를 주기적으로 확인하고 다운로드·설치·재실행을 안내합니다. 업데이트 파일과 배포 목록은 서명으로 검증합니다. 최초 설치 시 Apple 공증 경고는 여전히 표시될 수 있습니다.
+- **윈도우 설치형:** 실행 후 및 약 6시간마다 새 릴리스를 확인합니다. 새 버전을 자동 다운로드하고, 완료되면 **지금 업데이트**를 눌러 설치·재실행합니다. 나중에 선택했다면 트레이의 **업데이트 확인…**에서 다시 설치할 수 있습니다.
+- 두 플랫폼 모두 메뉴바 / 트레이의 **업데이트 확인…**으로 직접 확인할 수 있습니다. 네트워크 오류 시 기존 앱을 계속 사용할 수 있습니다.
+- 기존 v2.2.2 이하 앱에는 업데이트 기능이 없으므로 이번 버전은 한 번 직접 설치해야 합니다.
+
+### 설정 백업과 복원
+
+설정 변경 전, 앱 시작 시, 업데이트 전 기존 설정을 백업합니다. 같은 내용은 중복 저장하지 않으며 최근 **20개**를 보관합니다. 메뉴바 / 트레이의 **설정 백업 폴더 열기**, **설정 복원…**을 사용할 수 있습니다. 복원 전에도 현재 설정을 백업합니다.
+
+- macOS: `~/Library/Application Support/Mochi/Backups/`
+- Windows: `%APPDATA%\mochi-desktop\backups\`
+- 이 기능을 설치하기 전에 이미 덮어쓴 링크는 복구할 수 없습니다.
 
 > 배포 파일은 [GitHub Releases](https://github.com/chani337/desktop_mochi/releases)에 올라옵니다. 다운로드 버튼이 아직 열리지 않으면 릴리스 업로드 상태를 확인해 주세요.
 
@@ -137,7 +152,7 @@ npm start
 # 로직 테스트
 npm test
 
-# Windows x64 ZIP 생성
+# Windows x64 설치 EXE 및 ZIP 생성
 npm run build:win
 ```
 
@@ -164,6 +179,14 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.3.0 · 2026.09.30 — 앱 내 업데이트와 설정 백업**
+
+- Mac Sparkle 기반 업데이트 확인·다운로드·설치 및 서명 검증
+- Windows 설치형 EXE 및 앱 내 업데이트 추가
+- 설정 백업 20개 보관 및 메뉴에서 복원
+- 배포 파일과 업데이트 메타데이터를 함께 검증·게시하는 릴리스 도구 추가
+
 
 **v2.2.2 · 2026.09.29 — 앱 등록 오류 수정**
 
@@ -239,3 +262,5 @@ macOS 네이티브 빌드, Windows 패키지 생성 및 무결성 확인, Electr
 <div align="center">
 <sub>작은 모찌와 함께, 오늘도 내 속도로.</sub>
 </div>
+
+개발자용 배포 절차와 서명 키 관리는 [릴리스 가이드](docs/RELEASING.md)를 참고하세요.

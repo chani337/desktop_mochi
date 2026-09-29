@@ -2,6 +2,24 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.3.0] - 2026-09-30
+
+### 추가
+
+- macOS Sparkle 2.10 기반 자동 확인·다운로드·설치 및 메뉴바 수동 확인
+- Mac 업데이트 ZIP과 appcast의 Ed25519 서명 검증
+- Windows NSIS 설치형과 electron-updater 기반 앱 내 업데이트
+- Windows 자동 다운로드 완료 후 설치·재실행 선택
+- 설정 변경·업데이트 전 백업 및 최근 20개 보관, 메뉴에서 복원
+- 서명과 해시 검증 후 완성된 릴리스를 게시하는 배포 스크립트
+
+### 이전 버전에서 전환
+
+- 기존 사용자는 v2.3.0을 한 번 직접 설치해야 이후 앱 내 업데이트를 사용할 수 있습니다.
+- Windows ZIP 버전은 자동 교체 대상이 아니며 설치형 EXE를 사용해야 합니다.
+- Mac 앱은 응용 프로그램 폴더로 옮겨 실행하세요. Apple 공증은 아직 적용하지 않았습니다.
+- Windows 설치·교체·재실행 전체 과정은 실제 Windows PC에서 검증하지 못했습니다.
+
 ## [2.2.2] - 2026-09-29
 
 ### 수정
@@ -111,3 +129,5 @@
 [2.2.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.2.0
 
 [2.2.2]: https://github.com/chani337/desktop_mochi/releases/tag/v2.2.2
+
+[2.3.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.3.0

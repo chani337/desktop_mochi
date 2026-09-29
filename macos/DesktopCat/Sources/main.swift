@@ -1,5 +1,6 @@
 import AppKit
 import QuartzCore
+import Sparkle
 import UniformTypeIdentifiers
 
 let isTestRun = CommandLine.arguments.contains(where: { $0.hasSuffix("-test") })
@@ -325,6 +326,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var pet: PetPanel!
     var cat: CatView!
     var menuPanel: NSPanel?
+    var updaterController: SPUStandardUpdaterController?
     var settings: NSWindow?
     var sizeLabel: NSTextField?
     var petScale = 100
@@ -538,8 +540,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyPetScale(petScale)
         pet.orderFrontRegardless()
         setupStatus()
+        if !isTestRun {
+            do { try backupCurrentSettings() } catch { NSLog("Settings backup failed: %@", error.localizedDescription) }
+            updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
         if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
+        if CommandLine.arguments.contains("--update-test") { testUpdateBackups(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--registration-test") { testAppRegistration(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--shortcut-test") { testShortcuts(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--snapshot") { snapshot(); NSApp.terminate(nil) }
@@ -589,7 +596,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         status.button?.title = " 모찌"
         status.button?.toolTip = "모찌 · 집중 타이머 및 설정"
         let menu = NSMenu()
-        for (title, action) in [("모찌 데려오기", #selector(bringBack)), ("바로가기 설정…", #selector(showSettings)), ("집중 타이머 설정…", #selector(showFocusTimer)), ("산책 시작 / 멈춤", #selector(toggleWalking)), ("종료", #selector(quit))] {
+        for (title, action) in [("모찌 데려오기", #selector(bringBack)), ("바로가기 설정…", #selector(showSettings)), ("집중 타이머 설정…", #selector(showFocusTimer)), ("산책 시작 / 멈춤", #selector(toggleWalking)), ("업데이트 확인…", #selector(checkForUpdates)), ("설정 백업 폴더 열기", #selector(openBackups)), ("설정 복원…", #selector(restoreBackup)), ("종료", #selector(quit))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
         }
         status.menu = menu
@@ -598,6 +605,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastInteraction = Date(); cat.pose = .normal; cat.focusText = nil
     }
     func saveShortcuts() {
+        do { try backupCurrentSettings() } catch { NSLog("Settings backup failed: %@", error.localizedDescription) }
         if let data = try? JSONEncoder().encode(shortcuts) { appPreferences.set(data, forKey: key) }
     }
     func inferredSymbol(for url: URL) -> String {

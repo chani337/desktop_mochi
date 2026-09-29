@@ -25,7 +25,7 @@
 모찌는 바탕화면 위를 돌아다니는 데스크톱 캐릭터 앱입니다. 클릭하면 곡선형 팔레트가 펼쳐지고, 등록한 사이트나 파일을 바로 열 수 있어요. 집중할 때는 시간을 정해 함께 작업하고, 한동안 건드리지 않으면 모찌도 잠깐 쉬어갑니다.
 
 <div align="center">
-<img src="docs/images/palette-preview.png" width="600" alt="검색과 YouTube 바로가기가 펼쳐진 곡선형 팔레트 예시" />
+<img src="docs/images/palette-search-youtube.png" width="600" alt="검색과 YouTube 바로가기가 펼쳐진 곡선형 팔레트 예시" />
 <p><sub>바로가기 이름과 색상은 자유롭게 바꿀 수 있습니다.</sub></p>
 </div>
 

@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.0.0-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.0.1-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.0-win-x64.zip)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.1-win-x64.zip)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -54,7 +54,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.0.0-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.0-win-x64.zip)
+1. [Mochi-2.0.1-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.0.1-win-x64.zip)
 2. ZIP의 **전체 압축을 풀어주세요.**
 3. 폴더 안의 `Mochi.exe`를 실행합니다.
 
@@ -158,6 +158,12 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.0.1 · 2026.09.29 — Windows 수정**
+
+- 다른 창 위에서 팔레트를 열 때 표시 순서와 클릭 처리를 개선
+- Windows 자동 산책을 기본 해제: 실행할 때마다 제자리에 머물며 트레이에서 직접 산책 시작 가능
+
 
 **v2.0.0 · 2026.09.29**
 

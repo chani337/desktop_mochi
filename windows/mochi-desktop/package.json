@@ -1,6 +1,6 @@
 {
   "name": "mochi-desktop",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Mochi desktop companion with radial shortcuts and a focus timer",
   "main": "main.js",
   "author": "Mochi Desktop",
@@ -20,11 +20,37 @@
     "appId": "local.mochi.desktop",
     "productName": "Mochi",
     "asar": true,
-    "files": ["*.js", "*.html", "*.css", "assets/**", "package.json"],
-    "extraFiles": [{"from": "WINDOWS-README.md", "to": "읽어주세요.md"}],
-    "directories": {"output": "../../outputs/Mochi-Windows"},
-    "win": {"target": [{"target": "zip", "arch": ["x64"]}], "signAndEditExecutable": false},
+    "files": [
+      "*.js",
+      "*.html",
+      "*.css",
+      "assets/**",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "WINDOWS-README.md",
+        "to": "읽어주세요.md"
+      }
+    ],
+    "directories": {
+      "output": "../../outputs/Mochi-Windows"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
     "artifactName": "Mochi-${version}-${os}-${arch}.${ext}",
-    "mac": {"category": "public.app-category.productivity", "identity": null}
+    "mac": {
+      "category": "public.app-category.productivity",
+      "identity": null
+    }
   }
 }

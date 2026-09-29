@@ -82,8 +82,5 @@ function update(data){
 }
 api.on(update);
 call('state').then(update).catch(e=>error(e.message));
-if(view!=='settings'){
-  let ignored=false;
-  document.addEventListener('mousemove',e=>{if(pointerActive)return;const shouldIgnore=!e.target.closest('.action,.pet-hit');if(ignored!==shouldIgnore){ignored=shouldIgnore;call('ignore',ignored);}});
-  document.addEventListener('mouseleave',()=>{if(pointerActive)return;ignored=true;call('ignore',true);});
-}
+// Keep transparent windows interactive. Renderer mouseleave-based click-through
+// could leave a window permanently ignoring clicks over other Windows apps.

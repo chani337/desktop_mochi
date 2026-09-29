@@ -5,7 +5,7 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const { validateShortcuts, normalizeURL, inferIcon, durationSeconds, formatTime, selectedShortcut } = require('./model');
 let pet, palette, prefs, tray, file, state, dragging, holding = false, highlighted = -1;
 let lastTouch = Date.now(), waveUntil = 0, landUntil = 0, direction = 1, ticks = 0, pauseUntil = 0, quitting = false;
-const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:true, duration:25, end:null };
+const defaults = { shortcuts: [{title:'검색',url:'https://www.google.com/',icon:'web',color:'blue'}, {title:'YouTube',url:'https://www.youtube.com/',icon:'play',color:'red'}], walking:false, duration:25, end:null };
 const smoke = process.argv.includes('--smoke-test');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'mochi-smoke-profile'));
 if (!app.requestSingleInstanceLock()) { app.quit(); } else {
@@ -17,6 +17,8 @@ function load() {
   file=path.join(app.getPath('userData'),'settings.json');
   try { const s=JSON.parse(fs.readFileSync(file,'utf8')); state={...defaults,...s,shortcuts:validateShortcuts(s.shortcuts)}; }
   catch { state=structuredClone(defaults); }
+  // Walking is opt-in each session, including upgrades with walking:true saved.
+  state.walking=false;
   if (!Number.isFinite(state.duration)||state.duration<1||state.duration>1439) state.duration=25;
   if (!Number.isFinite(state.end) || state.end<=Date.now()) state.end=null;
 }
@@ -28,7 +30,7 @@ function send() { const data=publicState(); for (const w of [pet,palette,prefs])
 function touch() {lastTouch=Date.now();pauseUntil=Date.now()+1500;}
 function createWindow(kind,width,height) {
   const transparent=kind!=='settings';
-  const w=new BrowserWindow({width,height,show:false,frame:!transparent,transparent,hasShadow:!transparent,backgroundColor:transparent?'#00000000':'#faf8f4',resizable:false,maximizable:false,skipTaskbar:transparent,alwaysOnTop:transparent,title:'Mochi · 모찌',webPreferences:{preload:path.join(__dirname,'preload.js'),nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false}});
+  const w=new BrowserWindow({parent:kind==='palette'?pet:undefined,width,height,show:false,frame:!transparent,transparent,hasShadow:!transparent,backgroundColor:transparent?'#00000000':'#faf8f4',resizable:false,maximizable:false,skipTaskbar:transparent,alwaysOnTop:transparent,title:'Mochi · 모찌',webPreferences:{preload:path.join(__dirname,'preload.js'),nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false}});
   if(transparent) {w.setAlwaysOnTop(true,'floating');w.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});}
   w.setMenuBarVisibility(false);
   w.webContents.setWindowOpenHandler(()=>({action:'deny'}));
@@ -45,7 +47,11 @@ function showMenu(open=true) {
   const x=Math.max(r.x,Math.min(p.x+p.width/2-170,r.x+r.width-340));
   const wanted=p.y-206, y=wanted<r.y ? p.y+p.height-12 : wanted;
   palette.setPosition(Math.round(x),Math.round(Math.max(r.y,Math.min(y,r.y+r.height-220))));
-  palette.setIgnoreMouseEvents(false);palette.showInactive(); send();
+  palette.setIgnoreMouseEvents(false);
+  palette.setAlwaysOnTop(true,'pop-up-menu');
+  // Keep pointer capture during the hold gesture; normal clicks activate the palette.
+  if(holding) palette.showInactive(); else palette.show();
+  palette.moveTop();send();
 }
 function showSettings(tab='links') {
   showMenu(false); touch();
@@ -110,7 +116,18 @@ async function smokeTest() {
   let r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:1,minutes:15})`);assert.equal(r.ok,true);assert.ok(state.end>Date.now()+4490000);
   r=await pet.webContents.executeJavaScript(`window.mochi.call('timer-start',{hours:0,minutes:0})`);assert.equal(r.ok,false);
   await pet.webContents.executeJavaScript(`window.mochi.call('timer-stop')`);assert.equal(state.end,null);
-  showMenu(true);assert.equal(palette.isVisible(),true);
+  assert.equal(state.walking,false);
+  const restingBounds=pet.getBounds();
+  for(let i=0;i<50;i++)tick();
+  assert.deepEqual(pet.getBounds(),restingBounds);
+  // Exercise renderer click handling, not just showMenu directly.
+  pet.webContents.sendInputEvent({type:'mouseMove',x:40,y:48});
+  pet.webContents.sendInputEvent({type:'mouseDown',x:40,y:48,button:'left',clickCount:1});
+  pet.webContents.sendInputEvent({type:'mouseUp',x:40,y:48,button:'left',clickCount:1});
+  for(let i=0;i<50&&!palette.isVisible();i++)await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(palette.isVisible(),true);
+  assert.equal(palette.isAlwaysOnTop(),true);
+  assert.equal(palette.getParentWindow(),pet);
   showSettings('timer');await ready(prefs);
   if(!prefs.isVisible())await new Promise(resolve=>prefs.once('show',resolve));
   const errors=await prefs.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve({timer:!document.querySelector('#timerPanel').hidden,rows:document.querySelectorAll('.shortcut-row').length}))))`);assert.equal(errors.timer,true);assert.equal(errors.rows,5);

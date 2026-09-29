@@ -31,7 +31,16 @@ function validateShortcuts(rows) {
     };
   });
 }
-function inferIcon(url) { return /youtu/.test(url) ? 'play' : /spreadsheets/.test(url) ? 'table' : url.startsWith('file:') ? 'folder' : 'web'; }
+function inferIcon(url, title = '') {
+  const text = (url + ' ' + title).toLowerCase();
+  if (/youtu|video|media|player|동영상|재생/.test(text)) return 'play';
+  if (/spreadsheets|calc|excel|code|dev|terminal|cmd|git|시트|계산기|엑셀|개발/.test(text)) return 'table';
+  if (/music|spotify|audio|sound|음악|멜론/.test(text)) return 'music';
+  if (/check|task|todo|note|memo|체크|메모|할일/.test(text)) return 'check';
+  if (/folder|file|explorer|finder|폴더|파일|탐색기/.test(text)) return 'folder';
+  if (/star|fav|bookmark|즐겨찾기|별/.test(text)) return 'star';
+  return 'web';
+}
 function durationSeconds(hours, minutes) {
   const h = Number(hours), m = Number(minutes);
   if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59 || h*60+m < 1) throw new Error('1분부터 23시간 59분까지 입력해 주세요.');

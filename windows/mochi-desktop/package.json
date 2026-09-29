@@ -1,6 +1,6 @@
 {
   "name": "mochi-desktop",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Mochi desktop companion with radial shortcuts and a focus timer",
   "main": "main.js",
   "author": "Mochi Desktop",

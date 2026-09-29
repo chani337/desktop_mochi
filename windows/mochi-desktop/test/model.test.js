@@ -44,3 +44,14 @@ test('pet size validation and resizing preserve feet and stay on screen',()=>{
  const edge=resizedPetBounds({x:-80,y:0,width:80,height:86},area,250);
  assert.ok(edge.x+edge.width<=0);assert.equal(edge.y,0);
 });
+
+test('inferIcon accurately maps app keywords to icons', () => {
+  const { inferIcon } = require('../model');
+  assert.equal(inferIcon('file:///Applications/Visual Studio Code.app', 'Code'), 'table');
+  assert.equal(inferIcon('C:\\Windows\\notepad.exe', '메모장'), 'check');
+  assert.equal(inferIcon('https://youtube.com', 'YouTube'), 'play');
+  assert.equal(inferIcon('file:///Spotify.app', 'Spotify'), 'music');
+  assert.equal(inferIcon('file:///explorer.exe', '파일 탐색기'), 'folder');
+  assert.equal(inferIcon('https://example.com', '즐겨찾기'), 'star');
+  assert.equal(inferIcon('https://example.com', '일반웹'), 'web');
+});

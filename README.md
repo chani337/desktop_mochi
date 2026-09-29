@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.2.0-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.2.1-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.1.0-win-x64.zip)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.1-win-x64.zip)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -54,7 +54,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-2.2.0-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.0-win-x64.zip)
+1. [Mochi-2.2.1-win-x64.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-2.2.1-win-x64.zip)
 2. ZIP의 **전체 압축을 풀어주세요.**
 3. 폴더 안의 `Mochi.exe`를 실행합니다.
 
@@ -73,7 +73,7 @@
 3. 아이콘, 색상, 순서를 고른 뒤 저장합니다.
 4. 팔레트에서 해당 아이콘을 클릭하면 연결된 사이트나 파일이 열립니다.
 
-브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있습니다. 바로가기는 최대 **10개**까지 지원하며, 5개를 초과하면 '...' 버튼으로 2페이지에서 확인할 수 있습니다. Mac과 Windows의 설정은 각각 저장됩니다.
+브라우저 링크나 파일을 캐릭터 위로 끌어다 놓아 추가할 수도 있고, 설정의 **[+ 설치된 앱 가져오기]** 버튼으로 내 컴퓨터에 설치된 앱을 검색해 바로 등록할 수도 있습니다. 바로가기는 최대 **10개**까지 지원하며, 5개를 초과하면 '...' 버튼으로 2페이지에서 확인할 수 있습니다. Mac과 Windows의 설정은 각각 저장됩니다.
 
 ### 모찌 크기 바꾸기 · macOS / Windows
 
@@ -164,6 +164,14 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.2.1 · 2026.09.29 — 설치된 앱 가져오기 기능 추가**
+
+- 설정 화면에서 내 PC에 깔린 앱(VS Code, 메모장, Chrome 등)을 검색하고 원클릭으로 바로가기에 등록하는 기능 추가
+- Windows: 시작 메뉴 프로그램 및 기본 시스템 도구 자동 탐색 및 직접 파일 찾기 지원
+- macOS: `/Applications` 설치 앱 및 파일 탐색기 선택 지원
+- 앱 이름 및 경로 기반 스마트 아이콘 자동 추론 지원
+
 
 **v2.2.0 · 2026.09.29 — 바로가기 최대 10개 확장 및 페이징 지원**
 

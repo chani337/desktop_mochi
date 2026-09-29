@@ -4,3 +4,21 @@ body.settings{background:#faf8f4}.settings-shell{padding:28px 30px;height:100%;o
 
 .size-control{margin-top:20px;padding:15px 18px;background:#fff;border:1px solid #ebe3d8;border-radius:14px}.size-control>div{display:flex;justify-content:space-between;font-weight:600}.size-control input{width:100%;margin:12px 0 4px;accent-color:#9a7150}.size-control p{margin:0;color:#96887a;font-size:12px}.size-control output{font-variant-numeric:tabular-nums;color:#896342}
 #rows{max-height:250px;overflow-y:auto;padding-right:2px}
+.footer-actions{display:flex;gap:8px;align-items:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(57,53,49,0.45);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:100}
+.modal-overlay[hidden]{display:none}
+.modal-card{background:#fff;border-radius:16px;width:480px;max-width:92%;max-height:420px;display:flex;flex-direction:column;box-shadow:0 12px 36px rgba(0,0,0,0.2);padding:18px 22px;border:1px solid #ebd9c8}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-head h3{margin:0;font-size:16px;color:#483c30}
+.modal-close{font-size:22px;background:transparent;color:#8c8178;padding:0 4px;line-height:1}
+.modal-close:hover{color:#393531}
+.modal-search-row{display:flex;gap:8px;margin-bottom:12px}
+#appSearchInput{flex:1;height:36px;border:1px solid #e4ddd3;border-radius:8px;padding:0 10px;background:#faf8f4;color:#393531}
+#browseCustomFile{height:36px;padding:0 12px;font-size:12px;white-space:nowrap}
+.app-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;max-height:240px;padding-right:4px}
+.app-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:#faf8f4;border:1px solid #f0eae1;cursor:pointer;transition:all .15s ease}
+.app-item:hover,.app-item:focus-visible{background:#f3ecdf;border-color:#dfcfbc}
+.app-name{font-weight:600;color:#483c30;font-size:13px}
+.app-path{font-size:11px;color:#96887a;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-list-loading,.app-list-empty{padding:24px;text-align:center;color:#96887a;font-size:12px}
+

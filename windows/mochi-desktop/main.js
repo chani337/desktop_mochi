@@ -85,8 +85,66 @@ function setupIPC() {
   handle('hold',()=>{holding=true;showMenu(true);});
   handle('release',async()=>{if(holding){holding=false;const c=screen.getCursorScreenPoint(),r=palette.getBounds();const i=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);if(i>=0)await openShortcut(i);highlighted=-1;send();}});
   handle('drop',raw=>{if(state.shortcuts.length>=MAX_SHORTCUTS)throw new Error('바로가기는 최대 10개까지 등록할 수 있어요.');const url=normalizeURL(raw),u=new URL(url);state.shortcuts.push({title:(u.hostname||path.basename(u.pathname)||'바로가기').replace(/^www\./,'').slice(0,24),url,type:'url',target:url,icon:inferIcon(url),color:COLORS[state.shortcuts.length % COLORS.length]});save();touch();waveUntil=Date.now()+1600;send();});
+  handle('get-installed-apps',()=>getInstalledApps());
+  handle('pick-file',async()=>{
+    const {canceled,filePaths}=await dialog.showOpenDialog(prefs||pet,{title:'바로가기로 추가할 파일이나 프로그램 선택',properties:['openFile']});
+    if(canceled||!filePaths||!filePaths.length)return null;
+    const p=filePaths[0],name=path.basename(p).replace(/\.(exe|app|lnk)$/i,'');
+    return {name,target:p,icon:inferIcon(p,name)};
+  });
   handle('ignore',(ignore,event)=>{const w=BrowserWindow.fromWebContents(event.sender);if(w===pet||w===palette)w.setIgnoreMouseEvents(!!ignore,{forward:true});});
   handle('quit',()=>app.quit());
+}
+function scanLnkFiles(dir, addApp, depth = 0) {
+  if (depth > 3) return;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) scanLnkFiles(fullPath, addApp, depth + 1);
+      else if (entry.isFile() && entry.name.toLowerCase().endsWith('.lnk')) {
+        const base = entry.name.slice(0, -4);
+        if (/uninstall|readme|help|도움말|제거/i.test(base)) continue;
+        addApp(base, fullPath);
+      }
+    }
+  } catch {}
+}
+function getInstalledApps() {
+  const apps = [], seen = new Set();
+  function addApp(name, target, icon) {
+    if (!name || !target || seen.has(name.toLowerCase())) return;
+    seen.add(name.toLowerCase());
+    apps.push({ name, target, icon: icon || inferIcon(target, name) });
+  }
+  if (process.platform === 'win32') {
+    const startMenuPaths = [
+      path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft\\Windows\\Start Menu\\Programs'),
+      path.join(process.env.APPDATA || '', 'Microsoft\\Windows\\Start Menu\\Programs')
+    ];
+    for (const dir of startMenuPaths) { if (fs.existsSync(dir)) scanLnkFiles(dir, addApp); }
+    const windir = process.env.WINDIR || 'C:\\Windows';
+    const systemApps = [
+      { name: '메모장', target: path.join(windir, 'notepad.exe'), icon: 'check' },
+      { name: '계산기', target: path.join(windir, 'system32', 'calc.exe'), icon: 'table' },
+      { name: '그림판', target: path.join(windir, 'system32', 'mspaint.exe'), icon: 'star' },
+      { name: '파일 탐색기', target: path.join(windir, 'explorer.exe'), icon: 'folder' },
+      { name: '명령 프롬프트', target: path.join(windir, 'system32', 'cmd.exe'), icon: 'table' }
+    ];
+    for (const sa of systemApps) { if (fs.existsSync(sa.target)) addApp(sa.name, sa.target, sa.icon); }
+  } else {
+    const macAppDirs = ['/Applications', '/System/Applications', path.join(require('node:os').homedir(), 'Applications')];
+    for (const dir of macAppDirs) {
+      if (fs.existsSync(dir)) {
+        try {
+          for (const f of fs.readdirSync(dir)) {
+            if (f.endsWith('.app')) addApp(f.replace(/\.app$/, ''), path.join(dir, f));
+          }
+        } catch {}
+      }
+    }
+  }
+  return apps.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
 }
 function updateTray() {
   if(!tray)return;

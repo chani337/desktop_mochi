@@ -1,5 +1,6 @@
 import AppKit
 import QuartzCore
+import UniformTypeIdentifiers
 
 final class PaletteView: NSView {
     override func draw(_ dirtyRect: NSRect) {
@@ -850,8 +851,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             [t, u, icons, colors, up, down].forEach(doc.addSubview)
         }
         let error = NSTextField(wrappingLabelWithString: "앱 실행 예: shortcuts:// · 파일 열기 예: file:///Users/…"); error.frame = NSRect(x: 25, y: 55, width: 680, height: 42); error.textColor = .secondaryLabelColor; view.addSubview(error); errorLabel = error
+        let addApp = NSButton(title: "설치된 앱 가져오기…", target: self, action: #selector(chooseInstalledApp)); addApp.bezelStyle = .rounded; addApp.frame = NSRect(x: 535, y: 20, width: 155, height: 32); view.addSubview(addApp)
         let save = NSButton(title: "저장", target: self, action: #selector(saveSettings)); save.bezelStyle = .rounded; save.keyEquivalent = "\r"; save.frame = NSRect(x: 700, y: 20, width: 95, height: 32); view.addSubview(save)
         settings = w; w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
+    }
+    @objc func chooseInstalledApp() {
+        let panel = NSOpenPanel()
+        panel.title = "바로가기로 추가할 앱 또는 파일 선택"
+        panel.prompt = "선택"
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.application, .item]
+        if panel.runModal() == .OK, let url = panel.url {
+            let name = url.deletingPathExtension().lastPathComponent
+            for i in 0..<maxShortcuts {
+                if urlFields[i].stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    titleFields[i].stringValue = String(name.prefix(24))
+                    urlFields[i].stringValue = url.absoluteString
+                    let inferred = inferredSymbol(for: url)
+                    iconPopups[i].selectItem(at: shortcutSymbols.firstIndex(where: { $0.1 == inferred }) ?? 0)
+                    errorLabel?.stringValue = "'\(name)' 바로가기를 추가했어요. [저장]을 눌러주세요."
+                    errorLabel?.textColor = .labelColor
+                    return
+                }
+            }
+            errorLabel?.stringValue = "최대 10개까지 등록할 수 있어요. 빈 줄이 없어요."
+            errorLabel?.textColor = .systemRed
+        }
     }
     @objc func moveShortcutRow(_ sender: NSButton) {
         let from = sender.tag >= 100 ? sender.tag-100 : sender.tag

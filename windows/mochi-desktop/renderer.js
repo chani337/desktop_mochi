@@ -37,13 +37,55 @@ if(view==='pet') {
 } else if(view==='palette') {
   root.innerHTML='<section class="palette-shell"></section>';
 } else {
-  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><section class="size-control"><div><label for="petSize">모찌 크기</label><output id="petSizeValue" for="petSize">150%</output></div><input id="petSize" type="range" min="100" max="250" step="25" value="150"><p>100% ~ 250% · 크기를 바꾸면 바로 적용되고 자동 저장돼요.</p></section><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 10개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><button class="primary" id="save">저장</button></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><div class="error" role="status"></div></div>`;
+  root.innerHTML=`<div class="settings-shell"><div class="top"><img class="avatar" src="assets/mochi.png" alt="모찌"><div><h1>모찌의 작은 작업실</h1><p>자주 가는 곳, 그리고 나만의 집중 시간.</p></div></div><section class="size-control"><div><label for="petSize">모찌 크기</label><output id="petSizeValue" for="petSize">150%</output></div><input id="petSize" type="range" min="100" max="250" step="25" value="150"><p>100% ~ 250% · 크기를 바꾸면 바로 적용되고 자동 저장돼요.</p></section><nav class="tabs"><button data-tab="links" class="active">바로가기</button><button data-tab="timer">집중 타이머</button></nav><section id="linksPanel" class="panel"><div class="column-head"><span>이름</span><span>주소</span><span>아이콘</span><span>색상</span><span>순서</span></div><div id="rows"></div><div class="footer"><span class="hint">최대 10개 · 빈 줄은 숨겨져요.<br>브라우저 링크나 파일을 모찌에게 끌어다 놓아도 돼요.</span><div class="footer-actions"><button type="button" class="secondary" id="openAppPicker">+ 설치된 앱 가져오기</button><button class="primary" id="save">저장</button></div></div></section><section id="timerPanel" class="panel" hidden><div class="timer-card"><h2>모찌와 함께 집중하기</h2><div class="countdown">준비됐나요?</div><img class="timer-pet" src="assets/mochi.png" alt=""><div class="time-inputs"><input id="timerHours" type="number" min="0" max="23" value="0" aria-label="시간"><span>시간</span><input id="timerMinutes" type="number" min="0" max="59" value="25" aria-label="분"><span>분</span></div><p class="timer-hint">1분 ~ 23시간 59분. 컴퓨터가 잠들어도 경과 시간에 포함돼요.</p><div class="timer-actions"><button id="startTimer" class="primary">시작</button><button id="stopTimer" class="secondary">종료</button></div></div></section><div id="appPickerModal" class="modal-overlay" hidden><div class="modal-card"><div class="modal-head"><h3>설치된 앱 가져오기</h3><button type="button" class="modal-close" id="closeAppPicker" aria-label="닫기">×</button></div><div class="modal-search-row"><input type="text" id="appSearchInput" placeholder="앱 검색 (예: Chrome, Code, 메모장...)" autocomplete="off"><button type="button" class="secondary" id="browseCustomFile">파일 직접 찾기…</button></div><div id="appList" class="app-list"></div></div></div><div class="error" role="status"></div></div>`;
   const sizeInput=document.querySelector('#petSize');
   sizeInput.oninput=()=>{document.querySelector('#petSizeValue').textContent=sizeInput.value+'%';call('size',Number(sizeInput.value)).catch(e=>error(e.message));};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
   document.querySelector('#save').onclick=async()=>{try{await call('save',collectRows());dirty=false;lastLinks=JSON.stringify(state.shortcuts);error('저장했어요.');}catch(e){error(e.message)}};
   document.querySelector('#startTimer').onclick=async()=>{try{await call('timer-start',{hours:document.querySelector('#timerHours').value,minutes:document.querySelector('#timerMinutes').value});error('');}catch(e){error(e.message)}};
   document.querySelector('#stopTimer').onclick=()=>call('timer-stop').catch(e=>error(e.message));
+  let cachedApps=null;
+  const showAppPicker=async()=>{
+    const modal=document.querySelector('#appPickerModal'),list=document.querySelector('#appList'),input=document.querySelector('#appSearchInput');
+    modal.hidden=false;input.value='';list.innerHTML='<div class="app-list-loading">앱 목록을 불러오는 중…</div>';input.focus();
+    try{if(!cachedApps)cachedApps=await call('get-installed-apps');renderAppList(cachedApps);}
+    catch(err){list.innerHTML=`<div class="app-list-empty">목록을 불러오지 못했어요: ${err.message}</div>`;}
+  };
+  const renderAppList=apps=>{
+    const list=document.querySelector('#appList');list.innerHTML='';
+    const q=(document.querySelector('#appSearchInput').value||'').trim().toLowerCase();
+    const filtered=apps.filter(a=>!q||a.name.toLowerCase().includes(q)||a.target.toLowerCase().includes(q));
+    if(!filtered.length){list.innerHTML='<div class="app-list-empty">검색 결과가 없어요.</div>';return;}
+    for(const app of filtered){
+      const item=document.createElement('div');item.className='app-item';item.tabIndex=0;
+      item.innerHTML=`<span class="app-name">${app.name}</span><span class="app-path" title="${app.target}">${app.target}</span>`;
+      const select=()=>{
+        const rows=collectRows();let idx=rows.findIndex(r=>!r.title.trim()&&!r.url.trim());
+        if(idx===-1)idx=rows.findIndex(r=>!r.url.trim());
+        if(idx===-1){error('최대 10개까지 등록할 수 있어요. 빈 줄이 없어요.');document.querySelector('#appPickerModal').hidden=true;return;}
+        rows[idx]={title:app.name.slice(0,24),url:app.target,icon:app.icon||'web',color:colorNames[idx%colorNames.length][0]};
+        dirty=true;renderRows(rows);document.querySelector('#appPickerModal').hidden=true;error(`'${app.name}' 바로가기를 추가했어요. [저장]을 눌러주세요.`);
+      };
+      item.onclick=select;item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}};
+      list.append(item);
+    }
+  };
+  document.querySelector('#openAppPicker').onclick=showAppPicker;
+  document.querySelector('#closeAppPicker').onclick=()=>{document.querySelector('#appPickerModal').hidden=true;};
+  document.querySelector('#appPickerModal').onclick=e=>{if(e.target.id==='appPickerModal')e.target.hidden=true;};
+  document.querySelector('#appSearchInput').oninput=()=>{if(cachedApps)renderAppList(cachedApps);};
+  document.querySelector('#browseCustomFile').onclick=async()=>{
+    try{
+      const picked=await call('pick-file');
+      if(picked){
+        const rows=collectRows();let idx=rows.findIndex(r=>!r.title.trim()&&!r.url.trim());
+        if(idx===-1)idx=rows.findIndex(r=>!r.url.trim());
+        if(idx===-1){error('최대 10개까지 등록할 수 있어요. 빈 줄이 없어요.');document.querySelector('#appPickerModal').hidden=true;return;}
+        rows[idx]={title:picked.name.slice(0,24),url:picked.target,icon:picked.icon||'web',color:colorNames[idx%colorNames.length][0]};
+        dirty=true;renderRows(rows);document.querySelector('#appPickerModal').hidden=true;error(`'${picked.name}' 바로가기를 추가했어요. [저장]을 눌러주세요.`);
+      }
+    }catch(err){error(err.message);}
+  };
 }
 function switchTab(tab){document.querySelector('#linksPanel').hidden=tab==='timer';document.querySelector('#timerPanel').hidden=tab!=='timer';document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));error('');}
 function collectRows(){return [...document.querySelectorAll('.shortcut-row')].map(row=>({title:row.querySelector('.title').value,url:row.querySelector('.url').value,icon:row.querySelector('.icon-select').value,color:row.querySelector('.color-select').value}));}

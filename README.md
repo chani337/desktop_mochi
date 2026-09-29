@@ -8,7 +8,7 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.1.2-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.2.0-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
@@ -26,7 +26,7 @@
 
 <div align="center">
 <img src="docs/images/palette-search-youtube.png" width="600" alt="검색과 YouTube 바로가기가 펼쳐진 곡선형 팔레트 예시" />
-<p><sub>바로가기 이름과 색상은 자유롭게 바꿀 수 있습니다.</sub></p>
+<p><sub>바로가기 이름과 색상은 자유롭게 바꿀 수 있습니다. 6개 이상 등록 시 '...' 버튼으로 다음 페이지를 볼 수 있어요.</sub></p>
 </div>
 
 | | 모찌와 할 수 있는 것 |
@@ -164,6 +164,14 @@ desktop_mochi/
 </details>
 
 ## 업데이트
+
+**v2.2.0 · 2026.09.29 — 바로가기 최대 10개 확장 및 페이징 지원**
+
+- 바로가기를 최대 10개까지 등록하고 관리 가능
+- 1~5개 등록 시 기존과 동일한 곡선형 팔레트 유지
+- 6개 이상 등록 시 '...' 버튼으로 2페이지(6~10번째 바로가기) 이동 및 '←' 이전 버튼 제공
+- 설정 화면에서 10개 행 편집/순서 변경 및 드래그 앤 드롭 추가 지원
+
 
 **v2.1.2 · 2026.09.29 — macOS 팔레트 가독성 개선**
 

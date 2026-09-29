@@ -2,6 +2,17 @@
 
 버전별 사용자 관점의 변경 사항을 기록합니다.
 
+## [2.2.0] - 2026-09-29
+
+### 추가
+
+- macOS / Windows 공통 바로가기 최대 10개 확장
+- 1~5개 등록 시 기존 UI와 동일 유지
+- 6개 이상 등록 시 1페이지에 `...` 버튼, 2페이지에 `←` 이전 버튼 제공
+- 팔레트 닫기 및 재오픈 시 항상 1페이지로 자동 초기화
+- 설정 화면에서 최대 10개 바로가기 행 편집 및 순서 변경 지원
+- 기존 데이터 구조 및 { name, target } 형식 호환 지원
+
 ## [2.1.2] - 2026-09-29
 
 ### 수정
@@ -75,3 +86,5 @@
 [2.1.1]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.1
 
 [2.1.2]: https://github.com/chani337/desktop_mochi/releases/tag/v2.1.2
+
+[2.2.0]: https://github.com/chani337/desktop_mochi/releases/tag/v2.2.0

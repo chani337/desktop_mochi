@@ -1,5 +1,10 @@
 # Use the bundled native plugin, without PowerShell or folder-prefix matching.
 !macro customCheckAppRunning
+  # This hook expands after installUtil.nsh has defined its macros. Replace only
+  # the upgrade step; keep electron-builder's generated installer/uninstaller.
+  !ifndef BUILD_UNINSTALLER
+    !include "${BUILD_RESOURCES_DIR}/recovery-upgrade.nsh"
+  !endif
   Push $R0
   Push $R1
   StrCpy $R1 0

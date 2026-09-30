@@ -80,3 +80,11 @@ Mac은 `releases/latest/download/appcast.xml`, Windows는 GitHub의 최신 안�
 - [Sparkle 설치·서명 안내](https://sparkle-project.org/documentation/)
 - [Sparkle 업데이트 게시](https://sparkle-project.org/documentation/publishing/)
 - [electron-updater 소스와 사용 안내](https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater)
+
+## Windows 복구 업데이트 (2.4.5+)
+
+`build/installer.nsh`의 프로세스 검사 훅에서 `recovery-upgrade.nsh`를 포함합니다. electron-builder 26.15.3의 `installUtil.nsh` 정의 이후, 설치 섹션의 기존 제거 프로그램 호출 이전에 `uninstallOldVersion` 매크로만 재정의합니다. 새로 생성되는 제거 프로그램 자체에는 적용하지 않습니다. 앱 파일 설치·제거 프로그램 생성·설치 정보 등록·바로가기·재실행 단계는 유지합니다. [NSIS 매크로 재정의 문서](https://nsis.sourceforge.io/Docs/Chapter5.html#macroundef)를 참고하세요.
+
+기존 제거 프로그램은 실행하지 않고 앱 파일을 덮어씁니다. 사용자 지정 설치 폴더 전체를 삭제하지 않으며 설정 경로도 변경하지 않습니다. 다른 설치 위치를 선택하거나 현재 사용자/모든 사용자 설치가 서로 다른 위치에 공존하면 중단하고 기존 범위·위치를 사용하도록 안내합니다. 설치 실패 시 앱 파일 전체를 자동으로 되돌리는 기능은 없으므로 같은 EXE로 다시 설치합니다.
+
+빌더 의존성을 올릴 때 `test/installer.test.js`의 훅 순서 계약을 재검토하고 EXE를 빌드하세요. 실제 Windows에서는 2.4.3·2.4.4의 실행 중/종료 상태에서 수동·앱 내 업데이트, 설치 위치 변경 거부, 한글·공백 경로, 설정·백업 보존, 재실행과 새 제거 프로그램을 확인해야 합니다.

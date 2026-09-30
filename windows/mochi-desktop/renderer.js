@@ -105,22 +105,18 @@ function renderRows(data){
 }
 function renderPalette(){
   if(palettePage === 1 && state.shortcuts.length <= SHORTCUTS_PER_PAGE) palettePage = 0;
-  const shell=document.querySelector('.palette-shell');shell.innerHTML='<svg class="arc" viewBox="0 0 340 220"><path d="M59.1 136.6 A118 118 0 0 1 280.9 136.6" fill="none" stroke="#fcfcfc" stroke-width="68" stroke-linecap="round"/></svg>';
+  const shell=document.querySelector('.palette-shell');shell.innerHTML='<svg class="arc" viewBox="0 0 340 250"><path d="M59.1 136.6 A118 118 0 0 1 280.9 136.6" fill="none" stroke="#fcfcfc" stroke-width="68" stroke-linecap="round"/></svg>';
   function add(title,symbol,color,x,y,action,utility=false,index=-1){const b=document.createElement('button');b.className=`action ${utility?'utility ':''}${color}`;b.style.left=x+'px';b.style.top=y+'px';b.setAttribute('aria-label',title);b.dataset.index=index;b.innerHTML='<span class="name"></span><span class="disc">'+icon(symbol)+'</span>';b.querySelector('.name').textContent=title;b.onclick=()=>action().catch(e=>error(e.message));shell.append(b);return b;}
   const start = palettePage * SHORTCUTS_PER_PAGE;
   const pageShortcuts = state.shortcuts.slice(start, start + SHORTCUTS_PER_PAGE);
   pageShortcuts.forEach((s,i)=>{const globalIndex=start+i;const count=pageShortcuts.length;const a=(count===1?90:160-i*140/(count-1))*Math.PI/180;add(s.title,s.icon,s.color,170+118*Math.cos(a),177-118*Math.sin(a),()=>call('open',globalIndex),false,globalIndex);});
   if(!state.shortcuts.length)add('링크 추가','star','blue',170,59,()=>call('settings','links'));
-  if(state.shortcuts.length > SHORTCUTS_PER_PAGE){
-    if(palettePage === 0){
-      add('더보기','more','',268,185,async()=>{palettePage=1;renderPalette();},true);
-    } else {
-      add('이전','back','',72,185,async()=>{palettePage=0;renderPalette();},true);
-    }
-  }
-  add('설정','settings','',121,185,()=>call('settings','links'),true);
-  add(state.end?state.remaining:'타이머','timer','',170,185,()=>call('settings','timer'),true).id='paletteTimer';
-  add('닫기','close','',219,185,()=>call('menu',false),true);
+  const paged=state.shortcuts.length>SHORTCUTS_PER_PAGE;
+  const centers=paged?[96.5,145.5,194.5,243.5]:[121,170,219];
+  add('설정','settings','',centers[0],215,()=>call('settings','links'),true);
+  add(state.end?state.remaining:'타이머','timer','',centers[1],215,()=>call('settings','timer'),true).id='paletteTimer';
+  add('닫기','close','',centers[2],215,()=>call('menu',false),true);
+  if(paged)add(palettePage===0?'더보기':'이전',palettePage===0?'more':'back','',centers[3],215,async()=>{palettePage=1-palettePage;renderPalette();},true);
 }
 const motionAtlas=new Image();motionAtlas.src='assets/mochi-motions.png';
 motionAtlas.onload=()=>{if(state)update(state);};
@@ -136,7 +132,7 @@ function update(data){
     root.style.width='80px';root.style.height='86px';root.style.transformOrigin='0 0';root.style.transform=`scale(${state.scale/100})`;
     const hit=document.querySelector('.pet-hit');hit.className='pet-hit '+state.pose;
     paintMotion(document.querySelector('#petImage'),Motions.selected(state.motions,state.pose),state.facing);
-    if(!errorTimeout)document.querySelector('.pet-message').textContent=state.end?state.remaining:state.pose==='sleeping'?'Zzz':state.pose==='waving'?'♥':'';
+    if(!errorTimeout)document.querySelector('.pet-message').textContent=state.end?state.remaining:'';
     if(data.complete){try{const ctx=new AudioContext(),o=ctx.createOscillator(),gain=ctx.createGain();o.connect(gain);gain.connect(ctx.destination);o.frequency.value=660;gain.gain.setValueAtTime(.1,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7);o.start();o.stop(ctx.currentTime+.7);o.onended=()=>ctx.close();}catch{}}
   }else if(view==='palette'){
     const key=JSON.stringify(state.shortcuts);if(first||key!==lastLinks||(!lastPalette&&state.palette)){if(!lastPalette&&state.palette||key!==lastLinks)palettePage=0;renderPalette();lastLinks=key;}

@@ -22,7 +22,7 @@ func shortcutURL(_ input: String) -> URL? {
 final class PaletteView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let arc = NSBezierPath()
-        arc.appendArc(withCenter: NSPoint(x: 170, y: 24), radius: 118, startAngle: 160, endAngle: 20, clockwise: true)
+        arc.appendArc(withCenter: NSPoint(x: 170, y: 64), radius: 118, startAngle: 160, endAngle: 20, clockwise: true)
         arc.lineWidth = 68; arc.lineCapStyle = .round
         NSGraphicsContext.saveGraphicsState()
         let shadow = NSShadow(); shadow.shadowColor = NSColor.black.withAlphaComponent(0.18)
@@ -284,14 +284,7 @@ final class CatView: NSView {
         mouth.curve(to: NSPoint(x: 85, y: 99), controlPoint1: NSPoint(x: 78, y: 105), controlPoint2: NSPoint(x: 83, y: 105))
         mouth.curve(to: NSPoint(x: 93, y: 99), controlPoint1: NSPoint(x: 87, y: 105), controlPoint2: NSPoint(x: 92, y: 105))
         ink.setStroke(); mouth.lineWidth = 2.5; mouth.lineCapStyle = .round; mouth.stroke()
-        if excited {
-            ("♥" as NSString).draw(at: NSPoint(x: 139, y: 1), withAttributes: [.font: NSFont.systemFont(ofSize: 24), .foregroundColor: NSColor.systemPink])
-        }
-        if pose == .sleeping {
-            ("Zzz" as NSString).draw(at: NSPoint(x: 112, y: 61), withAttributes: [.font: NSFont.systemFont(ofSize: 16, weight: .bold), .foregroundColor: NSColor.systemBlue])
-        } else if pose == .dragging {
-            ("!" as NSString).draw(at: NSPoint(x: 139, y: 52), withAttributes: [.font: NSFont.systemFont(ofSize: 25, weight: .heavy), .foregroundColor: NSColor.systemOrange])
-        } else if pose == .focusing, let focusText {
+        if pose == .focusing, let focusText {
             let style = NSMutableParagraphStyle(); style.alignment = .center
             (focusText as NSString).draw(in: NSRect(x: 46, y: 120, width: 78, height: 22), withAttributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .bold), .foregroundColor: ink, .paragraphStyle: style])
         }
@@ -314,7 +307,7 @@ final class CatView: NSView {
         }
         if motionSprites.count == 18 { drawMotion(selectedMotion(context), in: NSRect(x: 0, y: 9, width: 170, height: 170), phase: phase, facing: facing) }
         else { image.draw(in: NSRect(x: 0, y: 9, width: 170, height: 170)) }
-        let text: String = dropTarget ? "놓기!" : pose == .focusing ? (focusText ?? "") : pose == .sleeping ? "Zzz" : (excited || pose == .waving) ? "♥" : ""
+        let text: String = dropTarget ? "놓기!" : pose == .focusing ? (focusText ?? "") : ""
         if !text.isEmpty {
             let style = NSMutableParagraphStyle(); style.alignment = .center
             (text as NSString).draw(in: NSRect(x: 10, y: 0, width: 150, height: 25), withAttributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 19, weight: .semibold), .foregroundColor: text == "♥" ? NSColor.systemPink : NSColor(calibratedRed: 0.54, green: 0.35, blue: 0.21, alpha: 1), .paragraphStyle: style])
@@ -708,7 +701,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let angle: CGFloat = pageItems.count == 1 ? .pi/2 : .pi * (160 - CGFloat(index)*140/CGFloat(pageItems.count-1))/180
             let fallback = URL(string: item.url).map(inferredSymbol) ?? "safari"
             let tint = colorForKey(item.color ?? shortcutColors[globalIndex % shortcutColors.count].1)
-            let b = button(item.title, symbol: item.symbol ?? fallback, tint: tint, frame: NSRect(x: 170+cos(angle)*118-29, y: 24+sin(angle)*118-28, width: 58, height: 58), action: #selector(openShortcut(_:)), tag: globalIndex)
+            let b = button(item.title, symbol: item.symbol ?? fallback, tint: tint, frame: NSRect(x: 170+cos(angle)*118-29, y: 64+sin(angle)*118-28, width: 58, height: 58), action: #selector(openShortcut(_:)), tag: globalIndex)
             b.toolTip = item.title + " · " + item.url
             paletteButtons.append(b)
             let pop = CASpringAnimation(keyPath: "transform.scale")
@@ -718,19 +711,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             b.layer?.add(pop, forKey: "pop")
         }
         if shortcuts.isEmpty {
-            let add = button("링크 추가", symbol: "plus", tint: .systemBlue, frame: NSRect(x: 141, y: 114, width: 58, height: 58), action: #selector(showSettings))
+            let add = button("링크 추가", symbol: "plus", tint: .systemBlue, frame: NSRect(x: 141, y: 154, width: 58, height: 58), action: #selector(showSettings))
             add.toolTip = "나만의 바로가기 추가"
         }
-        if shortcuts.count > shortcutsPerPage {
-            if palettePage == 0 {
-                _ = button("더보기", symbol: "ellipsis", tint: .darkGray, frame: NSRect(x: 246, y: 12, width: 44, height: 58), action: #selector(nextPalettePage), utility: true)
-            } else {
-                _ = button("이전", symbol: "arrow.left", tint: .darkGray, frame: NSRect(x: 50, y: 12, width: 44, height: 58), action: #selector(prevPalettePage), utility: true)
+        let paged = shortcuts.count > shortcutsPerPage
+        let centers: [CGFloat] = paged ? [96.5, 145.5, 194.5, 243.5] : [121, 170, 219]
+        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: centers[0]-22, y: 12, width: 44, height: 58), action: #selector(showSettings), utility: true)
+        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: centers[1]-22, y: 12, width: 44, height: 58), action: #selector(showFocusTimer), utility: true)
+        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: centers[2]-22, y: 12, width: 44, height: 58), action: #selector(dismiss), utility: true)
+        if paged {
+            _ = button(palettePage == 0 ? "더보기" : "이전", symbol: palettePage == 0 ? "ellipsis" : "arrow.left", tint: .darkGray, frame: NSRect(x: centers[3]-22, y: 12, width: 44, height: 58), action: palettePage == 0 ? #selector(nextPalettePage) : #selector(prevPalettePage), utility: true)
+        }
+        if isTestRun {
+            let buttons = bg.subviews.compactMap { $0 as? PaletteButton }
+            for (index, first) in buttons.enumerated() {
+                for second in buttons.dropFirst(index+1) { precondition(!(first.isUtility || second.isUtility) || !first.frame.intersects(second.frame), "Palette utility buttons overlap") }
             }
         }
-        _ = button("설정", symbol: "slider.horizontal.3", tint: .darkGray, frame: NSRect(x: 99, y: 12, width: 44, height: 58), action: #selector(showSettings), utility: true)
-        paletteTimerButton = button("타이머", symbol: "timer", tint: .darkGray, frame: NSRect(x: 148, y: 12, width: 44, height: 58), action: #selector(showFocusTimer), utility: true)
-        _ = button("닫기", symbol: "xmark", tint: .darkGray, frame: NSRect(x: 197, y: 12, width: 44, height: 58), action: #selector(dismiss), utility: true)
     }
     @objc func nextPalettePage() {
         palettePage = 1
@@ -750,7 +747,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if menuPanel != nil { closeMenu(); return }
         palettePage = 0
         cat.excited = true
-        let width: CGFloat = 340, height: CGFloat = 210
+        let width: CGFloat = 340, height: CGFloat = 250
         guard let rect = (pet.screen ?? NSScreen.main)?.visibleFrame else { return }
         let x = min(max(pet.frame.midX-width/2, rect.minX+8), rect.maxX-width-8)
         let y = min(max(pet.frame.maxY-18, rect.minY+8), rect.maxY-height-8)

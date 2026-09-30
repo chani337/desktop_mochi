@@ -9,17 +9,23 @@
 자주 쓰는 앱은 한 번의 클릭으로.<br />
 집중할 땐 함께 앉고, 쉬는 동안엔 함께 잠드는 데스크톱 친구.
 
-![Version](https://img.shields.io/badge/version-2.4.2-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.3-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**Mac 다운로드**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.2/DesktopCat.zip) · [**Windows 설치하기**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.2/Mochi-Setup-2.4.2.exe) · [모든 릴리스](https://github.com/chani337/desktop_mochi/releases)
+[**Mac 다운로드**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/DesktopCat.zip) · [**Windows 설치하기**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-Setup-2.4.3.exe) · [모든 릴리스](https://github.com/chani337/desktop_mochi/releases)
 
 [시작하기](#시작하기) · [사용과 설정](#사용과-설정) · [업데이트](#자동-업데이트) · [문제 해결](#문제-해결) · [변경 기록](#버전별-변경-기록)
 
 </div>
 
 ---
+
+## v2.4.3에서 달라진 점
+
+- Windows에서 다른 창을 사용할 때도 모찌와 팔레트의 최상단 표시를 유지하도록 보강했어요.
+- **설정 · 타이머 · 닫기 · 더보기/이전**을 아래쪽 줄에 모아 바로가기와 겹치지 않게 했어요.
+- Mac·Windows 모두 별도의 **Zzz·하트 말풍선**을 제거했어요. 캐릭터 이미지에 포함된 표현은 유지하고, 타이머 시간·오류 안내는 계속 표시해요.
 
 ## 작지만 할 일은 확실하게
 
@@ -42,11 +48,11 @@
 
 ### 다운로드
 
-| 플랫폼 | 지원 환경 | v2.4.2 다운로드 | 앱 내 업데이트 |
+| 플랫폼 | 지원 환경 | v2.4.3 다운로드 | 앱 내 업데이트 |
 | :--- | :--- | :--- | :--- |
-| **macOS** | macOS 13 이상 · Apple Silicon | [DesktopCat.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.2/DesktopCat.zip) | 지원 |
-| **Windows 설치형** | Windows 10 / 11 · x64 | [Mochi-Setup-2.4.2.exe](https://github.com/chani337/desktop_mochi/releases/download/v2.4.2/Mochi-Setup-2.4.2.exe) | 지원 |
-| **Windows 포터블** | Windows 10 / 11 · x64 | [Mochi-2.4.2-win-x64.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.2/Mochi-2.4.2-win-x64.zip) | 자동 교체 미지원 |
+| **macOS** | macOS 13 이상 · Apple Silicon | [DesktopCat.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/DesktopCat.zip) | 지원 |
+| **Windows 설치형** | Windows 10 / 11 · x64 | [Mochi-Setup-2.4.3.exe](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-Setup-2.4.3.exe) | 지원 |
+| **Windows 포터블** | Windows 10 / 11 · x64 | [Mochi-2.4.3-win-x64.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-2.4.3-win-x64.zip) | 자동 교체 미지원 |
 
 ### Mac 설치
 
@@ -193,6 +199,7 @@ Sparkle이 새 버전 확인·다운로드·설치·재실행을 처리하며, �
 
 | 버전 | 주요 변경 |
 | :--- | :--- |
+| **2.4.3** | Windows 최상단 표시 보강, 더보기 겹침 수정, Zzz·하트 말풍선 제거 |
 | **2.4.2** | Windows 종료 확인 후 업데이트 설치·재실행, 중복 설치 방지와 실패 안내 |
 | **2.4.1** | 좌우 이동 방향 반영, Mac 업데이트 실행 위치 안내 |
 | **2.4.0** | 18가지 포즈, 8가지 상황별 모션 설정·미리보기·자동 저장 |
@@ -273,7 +280,7 @@ desktop_mochi/
 
 ## 검증 범위
 
-v2.4.2는 **Node 검사 20개**, macOS에서 실행한 **Electron UI 통합 검사**, **Mac 빌드**, **Windows 패키징과 배포 파일 무결성 확인**을 수행했습니다. Mac의 서명된 업데이트 목록 검증과 새 버전 발견도 별도 테스트 앱에서 확인했습니다.
+v2.4.3은 **Node 검사 20개**, macOS에서 실행한 **Electron UI 통합 검사**, **Mac 빌드**, **Windows 패키징과 배포 파일 무결성 확인**을 수행했습니다. Mac의 서명된 업데이트 목록 검증과 새 버전 발견도 별도 테스트 앱에서 확인했습니다.
 
 **실제 Windows PC에서의 설치·종료·재실행 전체 과정, 창 표시·트레이·배율별 동작은 이 환경에서 직접 검증하지 못했습니다.** Mac 업데이트도 실제 설치·재실행 전체 과정의 검증을 완료한 것은 아닙니다.
 

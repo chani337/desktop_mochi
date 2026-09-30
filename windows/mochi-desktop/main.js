@@ -39,8 +39,13 @@ function send() { const data=publicState(); for (const w of [pet,palette,prefs])
 function touch() {lastTouch=Date.now();pauseUntil=Date.now()+1500;}
 function createWindow(kind,width,height) {
   const transparent=kind!=='settings';
-  const w=new BrowserWindow({parent:kind==='palette'?pet:undefined,width,height,show:false,frame:!transparent,transparent,hasShadow:!transparent,backgroundColor:transparent?'#00000000':'#faf8f4',resizable:false,maximizable:false,skipTaskbar:transparent,alwaysOnTop:transparent,title:'Mochi · 모찌',webPreferences:{preload:path.join(__dirname,'preload.js'),nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false}});
-  if(transparent) {w.setAlwaysOnTop(true,'floating');w.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});}
+  const w=new BrowserWindow({parent:kind==='palette'&&process.platform!=='win32'?pet:undefined,width,height,show:false,frame:!transparent,transparent,hasShadow:!transparent,backgroundColor:transparent?'#00000000':'#faf8f4',resizable:false,maximizable:false,skipTaskbar:transparent,alwaysOnTop:transparent,title:'Mochi · 모찌',webPreferences:{preload:path.join(__dirname,'preload.js'),nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false}});
+  if(transparent) {w.setAlwaysOnTop(true,process.platform==='win32'?'screen-saver':'floating');w.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});}
+  if(transparent&&process.platform==='win32'){
+    w.on('show',keepCompanionVisible);
+    w.on('blur',()=>setImmediate(keepCompanionVisible));
+    w.on('restore',keepCompanionVisible);
+  }
   w.setMenuBarVisibility(false);
   w.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   w.webContents.on('will-navigate',event=>event.preventDefault());
@@ -49,15 +54,22 @@ function createWindow(kind,width,height) {
   w.webContents.on('did-finish-load',send);
   return w;
 }
+function keepCompanionVisible() {
+  if(process.platform!=='win32'||quitting)return;
+  // Reassert topmost without activating a window or stealing keyboard focus.
+  for(const window of [pet,palette])if(window&&!window.isDestroyed()&&window.isVisible()){
+    window.setAlwaysOnTop(true,'screen-saver');window.moveTop();
+  }
+}
 function home() { const r=screen.getPrimaryDisplay().workArea,p=pet.getBounds(); pet.setPosition(Math.max(r.x,r.x+r.width-p.width-120),Math.max(r.y,r.y+r.height-p.height-19)); }
 function showMenu(open=true) {
   touch(); if(!open){palette?.hide();highlighted=-1;send();return;}
   const p=pet.getBounds(), r=screen.getDisplayMatching(p).workArea;
   const x=Math.max(r.x,Math.min(p.x+p.width/2-170,r.x+r.width-340));
-  const wanted=p.y-206, y=wanted<r.y ? p.y+p.height-12 : wanted;
-  palette.setPosition(Math.round(x),Math.round(Math.max(r.y,Math.min(y,r.y+r.height-220))));
+  const wanted=p.y-236, y=wanted<r.y ? p.y+p.height-12 : wanted;
+  palette.setPosition(Math.round(x),Math.round(Math.max(r.y,Math.min(y,r.y+r.height-250))));
   palette.setIgnoreMouseEvents(false);
-  palette.setAlwaysOnTop(true,'pop-up-menu');
+  palette.setAlwaysOnTop(true,process.platform==='win32'?'screen-saver':'pop-up-menu');
   // Keep pointer capture during the hold gesture; normal clicks activate the palette.
   if(holding) palette.showInactive(); else palette.show();
   palette.moveTop();send();
@@ -186,6 +198,7 @@ function tick() {
     pet.setPosition(x,Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-dragging.bounds.height))));}
   else if(holding){const c=screen.getCursorScreenPoint(),r=palette.getBounds();highlighted=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);}
   else if(publicState().pose==='walking') {const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;let x=p.x+direction;if(x<r.x||x+p.width>r.x+r.width){direction*=-1;x=Math.max(r.x,Math.min(x,r.x+r.width-p.width));}pet.setPosition(x,Math.max(r.y,Math.min(p.y,r.y+r.height-p.height)));}
+  if(ticks%25===0)keepCompanionVisible();
   if(++ticks%5===0){send();tray?.setToolTip(state.end?'모찌 · '+publicState().remaining:'모찌 · 바로가기와 집중 타이머');if(process.platform==='darwin')tray?.setTitle(state.end?publicState().remaining:'');}
 }
 async function start() {
@@ -200,7 +213,7 @@ async function start() {
     // or beforeunload handlers retaining a renderer and locking app.asar.
     app.exit(0);
   },installed,version:app.getVersion()});
-  setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,220);home();
+  setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,250);home();
   pet.once('ready-to-show',()=>pet.showInactive());
   try {const icon=nativeImage.createFromPath(path.join(__dirname,'assets','mochi.png')).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('모찌');tray.on('double-click',()=>showSettings('timer'));updateTray();}catch(error){console.error('Tray:',error.message);}
   app.dock?.hide();animationTimer=setInterval(tick,40);
@@ -264,6 +277,10 @@ async function smokeTest() {
   await new Promise(resolve=>setTimeout(resolve,50));
   palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, more:!!document.querySelector('.action[aria-label="더보기"]')})`);
   assert.equal(palState.actions, 5); assert.equal(palState.more, true);
+  const overlap=await palette.webContents.executeJavaScript(`(()=>{const actions=[...document.querySelectorAll('.action')];return actions.some((a,i)=>actions.slice(i+1).some(b=>{const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();return (a.classList.contains('utility')||b.classList.contains('utility'))&&x.left<y.right&&x.right>y.left&&x.top<y.bottom&&x.bottom>y.top;}));})()`);
+  assert.equal(overlap,false,'Six-shortcut palette buttons must not overlap');
+  fs.writeFileSync(path.join(__dirname,'smoke-palette-six.png'),(await palette.webContents.capturePage()).toPNG());
+
   await palette.webContents.executeJavaScript(`document.querySelector('.action[aria-label="더보기"]').click()`);
   await new Promise(resolve=>setTimeout(resolve,50));
   palState = await palette.webContents.executeJavaScript(`({actions:document.querySelectorAll('.action:not(.utility)').length, prev:!!document.querySelector('.action[aria-label="이전"]')})`);
@@ -340,6 +357,11 @@ async function smokeTest() {
     assert.equal(state.shortcuts.length,2);
   } finally {dialog.showOpenDialog=realDialog;shell.openPath=realOpen;}
   console.log('APP REGISTRATION PASS: installed apps, picker, select, save, restore, exact launch path, cancel');
+  for(const pose of ['sleeping','waving','idle']) {
+    const bubble=await pet.webContents.executeJavaScript(`(()=>{update({...state,pose:'${pose}',end:null});return document.querySelector('.pet-message').textContent;})()`);
+    assert.equal(bubble,'');
+  }
+  assert.equal(pet.isAlwaysOnTop(),true);assert.equal(palette.isAlwaysOnTop(),true);
   const linksBefore=JSON.stringify(state.shortcuts);
   await prefs.webContents.executeJavaScript(`window.mochi.call('motions',{idle:'dance',sleeping:'sleep',celebrating:'jump'})`);
   load();assert.equal(state.motions.idle,'dance');assert.equal(JSON.stringify(state.shortcuts),linksBefore);

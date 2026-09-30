@@ -32,7 +32,7 @@ function fixture({ installed = true, backupFails = false, installFails = false, 
   updater.checkForUpdates = async () => { events.push('check'); updater.emit('update-not-available'); };
   updater.installerPath = 'verified-setup.exe';
   const dialog = { showMessageBox: async options => { messages.push(options); return { response }; } };
-  const setup = setupUpdates({ updater, dialog, installed, version: '2.3.0', installUpdate: async installer => { assert.equal(installer,'verified-setup.exe');events.push('install');if(installFails)throw Error('helper failed'); }, backup: () => { events.push('backup'); if (backupFails) throw Error('disk full'); }, schedule: callback => { schedules.push(callback); return {}; }, repeat: callback => { schedules.push(callback); return {}; } });
+  const setup = setupUpdates({ updater, dialog, installed, version: '2.3.0', installUpdate: async installer => { assert.equal(installer,'verified-setup.exe');events.push('install');if(installFails)throw Error('installer failed'); }, backup: () => { events.push('backup'); if (backupFails) throw Error('disk full'); }, schedule: callback => { schedules.push(callback); return {}; }, repeat: callback => { schedules.push(callback); return {}; } });
   return { updater, events, messages, schedules, ...setup };
 }
 test('installed updater checks automatically and manual checks report no update', async () => {
@@ -56,7 +56,7 @@ test('portable copies never auto-install and failed checks can be retried', asyn
   await f.check(true); assert.deepEqual(f.events, ['retried']);
 });
 
-test('helper errors report installation failure, not backup failure, and allow retry', async () => {
+test('installer errors report installation failure, not backup failure, and allow retry', async () => {
   const f=fixture({installFails:true});f.updater.emit('update-downloaded');
   await new Promise(resolve=>setImmediate(resolve));
   assert.match(f.messages.at(-1).message,/설치를 시작하지/);

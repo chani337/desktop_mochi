@@ -1,6 +1,6 @@
 {
   "name": "mochi-desktop",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "Mochi desktop companion with radial shortcuts and a focus timer",
   "main": "main.js",
   "author": "Mochi Desktop",
@@ -25,8 +25,7 @@
       "*.html",
       "*.css",
       "assets/**",
-      "package.json",
-      "*.ps1"
+      "package.json"
     ],
     "extraFiles": [
       {
@@ -72,7 +71,8 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
-      "artifactName": "Mochi-Setup-${version}.${ext}"
+      "artifactName": "Mochi-Setup-${version}.${ext}",
+      "include": "build/installer.nsh"
     }
   },
   "dependencies": {

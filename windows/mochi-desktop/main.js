@@ -1,8 +1,8 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Notification, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Notification, dialog, autoUpdater: updaterLifecycle } = require('electron');
 const fs = require('node:fs');
 const { backupSettings } = require('./backups');
 const { setupUpdates } = require('./updates');
-const { handoffUpdate } = require('./update-handoff');
+const { installUpdate } = require('./update-install');
 let updates, animationTimer;
 const Motions = require('./motions');
 const path = require('node:path');
@@ -205,19 +205,22 @@ async function start() {
   load();
   try {backupSettings(file);} catch(error) {console.error('Settings backup:',error.message);}
   const installed=!smoke && process.platform==='win32' && app.isPackaged && fs.existsSync(path.join(path.dirname(process.execPath),'Uninstall Mochi.exe'));
-  updates=setupUpdates({updater:installed?require('electron-updater').autoUpdater:null,dialog,backup:()=>{save();backupSettings(file);},installUpdate:async installer=>{
-    await handoffUpdate({installer,directory:app.getPath('userData')});
-    quitting=true;clearInterval(animationTimer);tray?.destroy();
-    for(const window of BrowserWindow.getAllWindows())window.destroy();
-    // Settings were saved and the helper is ready. Exit without close-to-tray
-    // or beforeunload handlers retaining a renderer and locking app.asar.
-    app.exit(0);
-  },installed,version:app.getVersion()});
-  setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,250);home();
+  const updater=installed?require('electron-updater').autoUpdater:null;
+  const updateLog=message=>{try{fs.appendFileSync(path.join(app.getPath('userData'),'update-install.log'),new Date().toISOString()+' '+message+'\n');}catch(error){console.error('Update log:',error.message);}};
+  if(updater)updater.on('error',error=>updateLog(error.message));
+  updates=setupUpdates({updater,dialog,backup:()=>{save();backupSettings(file);},installUpdate:()=>installUpdate({
+    updater,lifecycle:updaterLifecycle,log:updateLog,
+    prepare:()=>{quitting=true;clearInterval(animationTimer);tray?.destroy();tray=null;for(const window of BrowserWindow.getAllWindows())window.destroy();},
+    recover:()=>{quitting=false;createCompanionWindows();},exit:code=>app.exit(code)
+  }),installed,version:app.getVersion()});
+  setupIPC();createCompanionWindows();
+  if(smoke) await smokeTest();
+}
+function createCompanionWindows() {
+  prefs=undefined;pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,250);home();
   pet.once('ready-to-show',()=>pet.showInactive());
   try {const icon=nativeImage.createFromPath(path.join(__dirname,'assets','mochi.png')).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('모찌');tray.on('double-click',()=>showSettings('timer'));updateTray();}catch(error){console.error('Tray:',error.message);}
   app.dock?.hide();animationTimer=setInterval(tick,40);
-  if(smoke) await smokeTest();
 }
 async function smokeTest() {
   const assert=require('node:assert/strict');

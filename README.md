@@ -9,11 +9,11 @@
 자주 쓰는 앱은 한 번의 클릭으로.<br />
 집중할 땐 함께 앉고, 쉬는 동안엔 함께 잠드는 데스크톱 친구.
 
-![Version](https://img.shields.io/badge/version-2.4.3-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.4-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**Mac 다운로드**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/DesktopCat.zip) · [**Windows 설치하기**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-Setup-2.4.3.exe) · [모든 릴리스](https://github.com/chani337/desktop_mochi/releases)
+[**Mac 다운로드**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.4/DesktopCat.zip) · [**Windows 설치하기**](https://github.com/chani337/desktop_mochi/releases/download/v2.4.4/Mochi-Setup-2.4.4.exe) · [모든 릴리스](https://github.com/chani337/desktop_mochi/releases)
 
 [시작하기](#시작하기) · [사용과 설정](#사용과-설정) · [업데이트](#자동-업데이트) · [문제 해결](#문제-해결) · [변경 기록](#버전별-변경-기록)
 
@@ -21,11 +21,12 @@
 
 ---
 
-## v2.4.3에서 달라진 점
+## v2.4.4에서 달라진 점
 
-- Windows에서 다른 창을 사용할 때도 모찌와 팔레트의 최상단 표시를 유지하도록 보강했어요.
-- **설정 · 타이머 · 닫기 · 더보기/이전**을 아래쪽 줄에 모아 바로가기와 겹치지 않게 했어요.
-- Mac·Windows 모두 별도의 **Zzz·하트 말풍선**을 제거했어요. 캐릭터 이미지에 포함된 표현은 유지하고, 타이머 시간·오류 안내는 계속 표시해요.
+- Windows 업데이트의 별도 PowerShell 도우미를 제거했어요. 도우미 준비 시간 초과로 막히는 경로를 없앴습니다.
+- 설정을 백업하고 창을 정리한 뒤 공식 updater의 설치·종료 요청을 처리해요.
+- 설치 파일에서도 PowerShell 대신 네이티브 프로세스 검사로 `Mochi.exe`를 확인하고 종료해요.
+- v2.4.3의 최상단 표시 보강·더보기 배치·Zzz와 하트 말풍선 제거는 유지합니다.
 
 ## 작지만 할 일은 확실하게
 
@@ -48,11 +49,11 @@
 
 ### 다운로드
 
-| 플랫폼 | 지원 환경 | v2.4.3 다운로드 | 앱 내 업데이트 |
+| 플랫폼 | 지원 환경 | v2.4.4 다운로드 | 앱 내 업데이트 |
 | :--- | :--- | :--- | :--- |
-| **macOS** | macOS 13 이상 · Apple Silicon | [DesktopCat.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/DesktopCat.zip) | 지원 |
-| **Windows 설치형** | Windows 10 / 11 · x64 | [Mochi-Setup-2.4.3.exe](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-Setup-2.4.3.exe) | 지원 |
-| **Windows 포터블** | Windows 10 / 11 · x64 | [Mochi-2.4.3-win-x64.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.3/Mochi-2.4.3-win-x64.zip) | 자동 교체 미지원 |
+| **macOS** | macOS 13 이상 · Apple Silicon | [DesktopCat.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.4/DesktopCat.zip) | 지원 |
+| **Windows 설치형** | Windows 10 / 11 · x64 | [Mochi-Setup-2.4.4.exe](https://github.com/chani337/desktop_mochi/releases/download/v2.4.4/Mochi-Setup-2.4.4.exe) | 지원 |
+| **Windows 포터블** | Windows 10 / 11 · x64 | [Mochi-2.4.4-win-x64.zip](https://github.com/chani337/desktop_mochi/releases/download/v2.4.4/Mochi-2.4.4-win-x64.zip) | 자동 교체 미지원 |
 
 ### Mac 설치
 
@@ -73,7 +74,7 @@
 
 설치형과 포터블은 같은 설정 위치를 사용합니다. 포터블을 쓰려면 ZIP **전체를 압축 해제**한 뒤 `Mochi.exe`를 실행하세요. Windows 배포용 코드 서명은 아직 적용하지 않았습니다.
 
-> **v2.4.1 이하에서 업데이트 설치가 막혔다면:** 이번 한 번은 트레이에서 모찌를 종료하고 v2.4.2 설치 파일을 직접 실행하세요. 새 자동 종료 방식은 **v2.4.2 설치 후 다음 업데이트부터** 적용됩니다.
+> **기존 버전에서 업데이트가 막혔다면:** 설치 창을 취소하고 트레이에서 모찌를 종료한 뒤 v2.4.4 설치 파일을 직접 실행하세요. 종료되지 않는 경우 작업 관리자에서 `Mochi.exe`를 종료한 뒤 설치할 수 있습니다. 기존 앱 안의 도우미 코드는 새 파일을 다운로드하는 것만으로 교체되지 않으므로 이번 한 번은 수동 설치가 필요합니다.
 
 ## 사용과 설정
 
@@ -144,25 +145,13 @@
 
 메뉴바·트레이의 **업데이트 확인…**에서 직접 확인할 수 있습니다. 자동 확인은 v2.3.0부터 지원하며, v2.2.2 이하나 Windows 포터블 사용자는 지원 버전을 한 번 직접 설치해야 합니다.
 
-### Windows 설치형 · v2.4.2
+### Windows 설치형 · v2.4.4
 
-실행 후 약 15초 뒤, 이후 약 6시간마다 새 버전을 확인합니다. 다운로드가 끝나면 **지금 업데이트** 또는 **나중에**를 선택할 수 있어요.
+실행 후 약 15초 뒤, 이후 약 6시간마다 새 버전을 확인합니다. 다운로드가 끝나면 **지금 업데이트** 또는 **나중에**를 선택하세요.
 
-```text
-지금 업데이트
-    ↓
-설정 저장 · 백업
-    ↓
-업데이트 도우미 준비
-    ↓
-모찌 자동 종료
-    ↓
-프로세스 종료 확인
-    ↓
-새 버전 설치 · 재실행
-```
+**설정 저장·백업 → 창·트레이 정리 → 공식 updater 설치 요청 → 종료 신호에 맞춰 모찌 종료 → 설치·재실행** 흐름입니다. 별도 PowerShell 도우미를 사용하지 않습니다. 설치 프로그램은 네이티브 방식으로 남아 있는 `Mochi.exe` 프로세스를 확인하고 종료를 시도합니다.
 
-도우미가 준비되지 않으면 모찌를 종료하지 않습니다. 종료 확인은 최대 30초 동안 기다리며, 모찌가 종료되지 않으면 설치를 시작하지 않아요. 중복 클릭으로 설치가 여러 번 실행되는 것도 방지합니다. **나중에**를 골랐다면 **업데이트 확인…**에서 다시 진행할 수 있어요.
+설치 요청이 실패하거나 종료 요청이 오지 않으면 앱 창을 복구하고 오류를 안내합니다. 업데이트 로그는 앱 자체가 기록하며, 중복 설치 요청도 방지합니다. **나중에**를 선택했다면 **업데이트 확인…**에서 다시 진행할 수 있어요.
 
 ### Mac
 
@@ -184,7 +173,7 @@ Sparkle이 새 버전 확인·다운로드·설치·재실행을 처리하며, �
 
 | 증상 | 확인할 내용 |
 | :--- | :--- |
-| **Windows 설치 중 모찌가 실행 중이라고 나와요** | v2.4.1 이하라면 트레이에서 종료한 뒤 v2.4.2 EXE를 직접 설치하세요. 새 종료 흐름은 설치 후 다음 업데이트부터 적용됩니다. |
+| **Windows 업데이트 도우미 오류 또는 종료 실패가 떠요** | 기존 설치 창 취소 → 트레이에서 모찌 종료 → v2.4.4 EXE 직접 설치 순서로 진행하세요. 필요하면 작업 관리자에서 `Mochi.exe`를 종료하세요. |
 | **Windows 포터블에서 업데이트가 안 돼요** | ZIP은 자동 교체 대상이 아닙니다. 설치형 EXE로 전환해 주세요. 기존 설정을 사용합니다. |
 | **Mac 업데이트가 실행 위치 때문에 차단돼요** | 모찌 종료 → Finder로 응용 프로그램 폴더에 이동 → 그곳의 앱 실행 순서로 진행하세요. |
 | **모찌가 너무 작아요** | 설정의 크기 슬라이더를 올려 주세요. 최대 250%입니다. |
@@ -199,6 +188,7 @@ Sparkle이 새 버전 확인·다운로드·설치·재실행을 처리하며, �
 
 | 버전 | 주요 변경 |
 | :--- | :--- |
+| **2.4.4** | PowerShell 도우미 제거, 공식 updater 종료 처리와 네이티브 설치 프로세스 검사 |
 | **2.4.3** | Windows 최상단 표시 보강, 더보기 겹침 수정, Zzz·하트 말풍선 제거 |
 | **2.4.2** | Windows 종료 확인 후 업데이트 설치·재실행, 중복 설치 방지와 실패 안내 |
 | **2.4.1** | 좌우 이동 방향 반영, Mac 업데이트 실행 위치 안내 |
@@ -244,7 +234,7 @@ npm start
 ```
 
 ```sh
-npm test            # 로직·업데이트 도우미 검사
+npm test            # 로직·업데이트 종료 검사
 npm run build:win  # Windows x64 설치 EXE와 ZIP 생성
 ```
 
@@ -264,8 +254,8 @@ desktop_mochi/
 │   ├── main.js                # 창·트레이·설정·타이머
 │   ├── renderer.js            # 캐릭터·팔레트·설정 화면
 │   ├── updates.js             # 업데이트 확인·다운로드·설치 안내
-│   ├── update-handoff.js      # 업데이트 도우미 준비
-│   ├── install-update.ps1     # 종료 대기 후 설치 실행
+│   ├── update-install.js      # 공식 updater 종료·복구 처리
+│   ├── build/installer.nsh    # 네이티브 실행 프로세스 검사
 │   └── test/
 ├── scripts/                   # 릴리스 빌드·서명 검증·게시
 ├── docs/                      # 이미지·릴리스 안내·제작 기록
@@ -280,7 +270,7 @@ desktop_mochi/
 
 ## 검증 범위
 
-v2.4.3은 **Node 검사 20개**, macOS에서 실행한 **Electron UI 통합 검사**, **Mac 빌드**, **Windows 패키징과 배포 파일 무결성 확인**을 수행했습니다. Mac의 서명된 업데이트 목록 검증과 새 버전 발견도 별도 테스트 앱에서 확인했습니다.
+v2.4.4는 **Node 검사 20개**, macOS에서 실행한 **Electron UI 통합 검사**, **Mac 빌드**, **Windows 패키징과 배포 파일 무결성 확인**을 수행했습니다. Mac의 서명된 업데이트 목록 검증과 새 버전 발견도 별도 테스트 앱에서 확인했습니다.
 
 **실제 Windows PC에서의 설치·종료·재실행 전체 과정, 창 표시·트레이·배율별 동작은 이 환경에서 직접 검증하지 못했습니다.** Mac 업데이트도 실제 설치·재실행 전체 과정의 검증을 완료한 것은 아닙니다.
 

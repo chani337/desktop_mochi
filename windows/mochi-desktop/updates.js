@@ -6,7 +6,7 @@ function setupUpdates({ updater, dialog, backup, installed, version, installUpda
     if (installing) return;
     installing = true;
     try {
-      const result = await dialog.showMessageBox({ type: 'info', title: '모찌 업데이트', message: '새 버전 다운로드가 완료됐어요.', detail: '설정을 백업하고 모찌를 자동 종료해요. 종료를 확인한 뒤 설치하고 다시 실행합니다.', buttons: ['지금 업데이트', '나중에'], defaultId: 0, cancelId: 1 });
+      const result = await dialog.showMessageBox({ type: 'info', title: '모찌 업데이트', message: '새 버전 다운로드가 완료됐어요.', detail: '설정을 백업하고 모찌를 자동 종료해요. 설치가 끝나면 다시 실행합니다.', buttons: ['지금 업데이트', '나중에'], defaultId: 0, cancelId: 1 });
       if (result.response !== 0) return;
       try { backup(); }
       catch { await message('설정 백업에 실패해 업데이트를 중단했어요.', '저장 공간과 폴더 권한을 확인한 뒤 다시 시도해 주세요.'); return; }

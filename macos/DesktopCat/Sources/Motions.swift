@@ -26,11 +26,12 @@ let motionSprites: [NSImage] = {
         return NSImage(cgImage: crop, size: NSSize(width: 170, height: 170))
     }
 }()
-func drawMotion(_ motion: Motion, in rect: NSRect, phase: CGFloat) {
+func drawMotion(_ motion: Motion, in rect: NSRect, phase: CGFloat, facing: CGFloat = 1) {
     guard motionSprites.indices.contains(motion.index) else { return }
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current?.imageInterpolation = .high
     let t = NSAffineTransform(); t.translateX(by: rect.midX, yBy: rect.minY + rect.height * 0.85)
+    t.scaleX(by: facing < 0 ? -1 : 1, yBy: 1)
     switch motion.id {
     case "walk", "run": t.rotate(byDegrees: sin(phase*1.8)*4); t.translateX(by: 0, yBy: -abs(sin(phase*1.8))*rect.height*0.025)
     case "wave", "dance": t.rotate(byDegrees: sin(phase*1.5)*6)
@@ -81,6 +82,12 @@ extension AppDelegate {
     }
     func testMotions() {
         assert(motionSprites.count == 18)
+        walking = true; pauseUntil = .distantPast; direction = 1; cat.pose = .normal
+        if let area = pet.screen?.visibleFrame {
+            pet.setFrameOrigin(NSPoint(x: area.maxX-pet.frame.width, y: area.minY+30)); animate(); assert(cat.facing == -1)
+            direction = -1; pet.setFrameOrigin(NSPoint(x: area.minX, y: area.minY+30)); animate(); assert(cat.facing == 1)
+        }
+        walking = false
         assert(selectedMotion("sleeping").id == "sleep")
         appPreferences.set(["idle": "dance", "sleeping": "bad"], forKey: motionSettingsKey)
         assert(selectedMotion("idle").id == "dance" && selectedMotion("sleeping").id == "sleep")

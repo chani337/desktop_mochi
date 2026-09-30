@@ -157,6 +157,7 @@ final class CatView: NSView {
     var phase: CGFloat = 0
     var excited = false
     var walking = false
+    var facing: CGFloat = 1
     var pose: PetPose = .normal
     var focusText: String?
     var dropTarget = false
@@ -197,7 +198,9 @@ final class CatView: NSView {
             holdTimer?.invalidate()
             if !dragged { onDragStarted?() }
             dragged = true
-            window?.setFrameOrigin(NSPoint(x: origin.x+now.x-down.x, y: origin.y+now.y-down.y))
+            let target = NSPoint(x: origin.x+now.x-down.x, y: origin.y+now.y-down.y)
+            if let previous = window?.frame.origin.x, abs(target.x-previous) > 0.2 { facing = target.x < previous ? -1 : 1 }
+            window?.setFrameOrigin(target)
         }
     }
     override func mouseUp(with event: NSEvent) {
@@ -309,7 +312,7 @@ final class CatView: NSView {
         case .celebrating: context = "celebrating"
         case .normal: context = walking ? "walking" : excited ? "waving" : "idle"
         }
-        if motionSprites.count == 18 { drawMotion(selectedMotion(context), in: NSRect(x: 0, y: 9, width: 170, height: 170), phase: phase) }
+        if motionSprites.count == 18 { drawMotion(selectedMotion(context), in: NSRect(x: 0, y: 9, width: 170, height: 170), phase: phase, facing: facing) }
         else { image.draw(in: NSRect(x: 0, y: 9, width: 170, height: 170)) }
         let text: String = dropTarget ? "놓기!" : pose == .focusing ? (focusText ?? "") : pose == .sleeping ? "Zzz" : (excited || pose == .waving) ? "♥" : ""
         if !text.isEmpty {
@@ -544,6 +547,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
         }
         timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { [weak self] _ in self?.animate() }
+        if CommandLine.arguments.contains("--update-feed-test") { testUpdateFeed(); return }
         if CommandLine.arguments.contains("--motion-test") { testMotions(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--size-test") { testPetSize(); NSApp.terminate(nil); return }
         if CommandLine.arguments.contains("--update-test") { testUpdateBackups(); NSApp.terminate(nil); return }
@@ -655,6 +659,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if p.x < rect.minX || p.x+pet.frame.width > rect.maxX { direction *= -1 }
                 p.x = min(max(p.x, rect.minX), rect.maxX-pet.frame.width)
                 p.y = min(max(p.y, rect.minY), rect.maxY-pet.frame.height)
+                cat.facing = direction
                 pet.setFrameOrigin(p)
             }
         }

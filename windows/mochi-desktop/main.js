@@ -32,7 +32,7 @@ function load() {
 }
 function publicState() {
   const now=Date.now(), remain=state.end ? Math.max(0,Math.ceil((state.end-now)/1000)) : 0;
-  return {...state, remaining:formatTime(remain), pose: dragging ? 'dragging' : now<celebrateUntil ? 'celebrating' : now<landUntil ? 'landing' : now<waveUntil ? 'waving' : state.end ? 'focusing' : now-lastTouch>600000 ? 'sleeping' : state.walking && !palette?.isVisible() && now>pauseUntil ?'walking':palette?.isVisible()?'waving':'idle', highlighted, palette:!!palette?.isVisible()};
+  return {...state, remaining:formatTime(remain), facing:direction, pose: dragging ? 'dragging' : now<celebrateUntil ? 'celebrating' : now<landUntil ? 'landing' : now<waveUntil ? 'waving' : state.end ? 'focusing' : now-lastTouch>600000 ? 'sleeping' : state.walking && !palette?.isVisible() && now>pauseUntil ?'walking':palette?.isVisible()?'waving':'idle', highlighted, palette:!!palette?.isVisible()};
 }
 function send() { const data=publicState(); for (const w of [pet,palette,prefs]) if(w&&!w.isDestroyed()) w.webContents.send('mochi:update',data); }
 function touch() {lastTouch=Date.now();pauseUntil=Date.now()+1500;}
@@ -179,7 +179,10 @@ function tick() {
   if(!pet||pet.isDestroyed())return;
   const now=Date.now();
   if(state.end && now>=state.end){state.end=null;touch();celebrateUntil=now+4000;save();pet.webContents.send('mochi:update',{complete:true,...publicState()});if(Notification.isSupported())new Notification({title:'모찌 · 집중 완료',body:'수고했어요! 잠깐 기지개를 켜요.'}).show();}
-  if(dragging){const c=screen.getCursorScreenPoint(),r=screen.getDisplayNearestPoint(c).workArea;pet.setPosition(Math.round(Math.max(r.x,Math.min(dragging.bounds.x+c.x-dragging.point.x,r.x+r.width-dragging.bounds.width))),Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-dragging.bounds.height))));}
+  if(dragging){const c=screen.getCursorScreenPoint(),r=screen.getDisplayNearestPoint(c).workArea;
+    const x=Math.round(Math.max(r.x,Math.min(dragging.bounds.x+c.x-dragging.point.x,r.x+r.width-dragging.bounds.width))),previous=pet.getBounds().x;
+    if(x!==previous)direction=x<previous?-1:1;
+    pet.setPosition(x,Math.round(Math.max(r.y,Math.min(dragging.bounds.y+c.y-dragging.point.y,r.y+r.height-dragging.bounds.height))));}
   else if(holding){const c=screen.getCursorScreenPoint(),r=palette.getBounds();highlighted=selectedShortcut({x:c.x-r.x,y:c.y-r.y},state.shortcuts.length);}
   else if(publicState().pose==='walking') {const p=pet.getBounds(),r=screen.getDisplayMatching(p).workArea;let x=p.x+direction;if(x<r.x||x+p.width>r.x+r.width){direction*=-1;x=Math.max(r.x,Math.min(x,r.x+r.width-p.width));}pet.setPosition(x,Math.max(r.y,Math.min(p.y,r.y+r.height-p.height)));}
   if(++ticks%5===0){send();tray?.setToolTip(state.end?'모찌 · '+publicState().remaining:'모찌 · 바로가기와 집중 타이머');if(process.platform==='darwin')tray?.setTitle(state.end?publicState().remaining:'');}
@@ -343,6 +346,10 @@ async function smokeTest() {
   const motionShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-motions.png'),motionShot.toPNG());
   await prefs.webContents.executeJavaScript(`document.querySelector('#resetMotions').click()`);
   await new Promise(resolve=>setTimeout(resolve,200));assert.equal(state.motions.idle,'idle');
+  direction=-1;send();await new Promise(resolve=>setTimeout(resolve,250));
+  assert.equal(publicState().facing,-1);
+  const mirrored=await pet.webContents.executeJavaScript(`(()=>{const c=document.querySelector('#petImage');paintMotion(c,Motions.selected(state.motions,'walking'),-1);const left=c.getContext('2d').getImageData(0,0,c.width,c.height).data;paintMotion(c,Motions.selected(state.motions,'walking'),1);const right=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let error=0;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)for(let k=0;k<4;k++)error+=Math.abs(left[(y*c.width+x)*4+k]-right[(y*c.width+c.width-1-x)*4+k]);return error/left.length;})()`);
+  assert.ok(mirrored<1,'Rendered directions must be mirrored');direction=1;
   console.log('MOTIONS PASS: selection, persistence, existing links, focus/complete/sleep contexts, 8 controls, reset');
   const settingsShot=await prefs.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-settings.png'),settingsShot.toPNG());
   const shot=await palette.webContents.capturePage();fs.writeFileSync(path.join(__dirname,'smoke-palette.png'),shot.toPNG());

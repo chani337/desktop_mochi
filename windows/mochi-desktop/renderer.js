@@ -124,9 +124,9 @@ function renderPalette(){
 }
 const motionAtlas=new Image();motionAtlas.src='assets/mochi-motions.png';
 motionAtlas.onload=()=>{if(state)update(state);};
-function paintMotion(element,motion){
+function paintMotion(element,motion,facing=1){
   element.className='motion-sprite motion-'+motion.id;
-  if(motionAtlas.complete&&motionAtlas.naturalWidth){const ctx=element.getContext('2d'),[x,y,w,h]=motion.rect,size=element.width,scale=size/Math.max(w,h);ctx.clearRect(0,0,size,size);ctx.drawImage(motionAtlas,x,y,w,h,(size-w*scale)/2,(size-h*scale)/2,w*scale,h*scale);}
+  if(motionAtlas.complete&&motionAtlas.naturalWidth){const ctx=element.getContext('2d'),[x,y,w,h]=motion.rect,size=element.width,scale=size/Math.max(w,h);ctx.clearRect(0,0,size,size);ctx.save();if(facing<0){ctx.translate(size,0);ctx.scale(-1,1);}ctx.drawImage(motionAtlas,x,y,w,h,(size-w*scale)/2,(size-h*scale)/2,w*scale,h*scale);ctx.restore();}
   element.setAttribute('aria-label',motion.name);
 }
 function update(data){
@@ -135,7 +135,7 @@ function update(data){
   if(view==='pet'){
     root.style.width='80px';root.style.height='86px';root.style.transformOrigin='0 0';root.style.transform=`scale(${state.scale/100})`;
     const hit=document.querySelector('.pet-hit');hit.className='pet-hit '+state.pose;
-    paintMotion(document.querySelector('#petImage'),Motions.selected(state.motions,state.pose));
+    paintMotion(document.querySelector('#petImage'),Motions.selected(state.motions,state.pose),state.facing);
     if(!errorTimeout)document.querySelector('.pet-message').textContent=state.end?state.remaining:state.pose==='sleeping'?'Zzz':state.pose==='waving'?'♥':'';
     if(data.complete){try{const ctx=new AudioContext(),o=ctx.createOscillator(),gain=ctx.createGain();o.connect(gain);gain.connect(ctx.destination);o.frequency.value=660;gain.gain.setValueAtTime(.1,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7);o.start();o.stop(ctx.currentTime+.7);o.onended=()=>ctx.close();}catch{}}
   }else if(view==='palette'){

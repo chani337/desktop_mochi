@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.4.0-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.1-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.0.exe)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.1.exe)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -48,6 +48,8 @@
 - **기본 모션으로 되돌리기**는 모션 선택만 초기화하며 기존 링크·크기·타이머 설정은 유지합니다.
 - 기본 수면은 잠자는 모습, 집중 중에는 앉기, 완료하면 박수예요. 산책을 켜지 않으면 위치는 움직이지 않아요.
 
+왼쪽으로 이동하면 왼쪽을, 오른쪽으로 이동하면 오른쪽을 바라봅니다. 산책과 직접 드래그 이동 모두 적용됩니다.
+
 원본은 정지 포즈 시트이며, 앱이 포즈별 움직임 효과를 적용합니다. 프레임별로 팔다리가 바뀌는 영상 애니메이션은 아닙니다.
 
 ## 시작하기
@@ -58,7 +60,9 @@
 
 1. [DesktopCat.zip 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip)
 2. 압축을 풀고 `DesktopCat.app`을 **응용 프로그램** 폴더로 옮깁니다.
-3. 앱을 실행하면 바탕화면에 모찌가 나타납니다.
+3. **응용 프로그램 폴더에 옮긴 앱**을 실행하면 바탕화면에 모찌가 나타납니다.
+
+다운로드 폴더에서 실행하면 macOS의 임시 실행·보안 정책 때문에 자동 업데이트가 차단될 수 있습니다. 모찌를 종료하고 Finder로 앱을 응용 프로그램 폴더에 옮긴 후 다시 실행해 주세요. v2.4.1부터는 업데이트 확인 시 해당 상황을 한글로 안내합니다. 기존 링크와 모션 설정은 유지됩니다.
 
 배포용 앱은 Apple 공증을 받지 않았습니다. 실행이 차단되면 다운로드 출처를 확인한 후 **시스템 설정 → 개인정보 보호 및 보안 → 확인 없이 열기**를 사용하세요. Intel Mac은 아래 소스 빌드 방법을 이용할 수 있지만, 실제 Intel 기기에서는 검증하지 않았습니다.
 
@@ -66,7 +70,7 @@
 
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-Setup-2.4.0.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.0.exe)
+1. [Mochi-Setup-2.4.1.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.1.exe)
 2. 기존 모찌가 실행 중이면 트레이 메뉴에서 **종료**합니다.
 3. 설치 파일을 실행하고 안내에 따라 설치한 뒤 모찌를 실행합니다.
 

@@ -2,7 +2,8 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, shell, Not
 const fs = require('node:fs');
 const { backupSettings } = require('./backups');
 const { setupUpdates } = require('./updates');
-let updates;
+const { handoffUpdate } = require('./update-handoff');
+let updates, animationTimer;
 const Motions = require('./motions');
 const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
@@ -191,11 +192,18 @@ async function start() {
   load();
   try {backupSettings(file);} catch(error) {console.error('Settings backup:',error.message);}
   const installed=!smoke && process.platform==='win32' && app.isPackaged && fs.existsSync(path.join(path.dirname(process.execPath),'Uninstall Mochi.exe'));
-  updates=setupUpdates({updater:installed?require('electron-updater').autoUpdater:null,dialog,backup:()=>backupSettings(file),installed,version:app.getVersion()});
+  updates=setupUpdates({updater:installed?require('electron-updater').autoUpdater:null,dialog,backup:()=>{save();backupSettings(file);},installUpdate:async installer=>{
+    await handoffUpdate({installer,directory:app.getPath('userData')});
+    quitting=true;clearInterval(animationTimer);tray?.destroy();
+    for(const window of BrowserWindow.getAllWindows())window.destroy();
+    // Settings were saved and the helper is ready. Exit without close-to-tray
+    // or beforeunload handlers retaining a renderer and locking app.asar.
+    app.exit(0);
+  },installed,version:app.getVersion()});
   setupIPC();pet=createWindow('pet',petSize(state.scale).width,petSize(state.scale).height);palette=createWindow('palette',340,220);home();
   pet.once('ready-to-show',()=>pet.showInactive());
   try {const icon=nativeImage.createFromPath(path.join(__dirname,'assets','mochi.png')).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('모찌');tray.on('double-click',()=>showSettings('timer'));updateTray();}catch(error){console.error('Tray:',error.message);}
-  app.dock?.hide();setInterval(tick,40);
+  app.dock?.hide();animationTimer=setInterval(tick,40);
   if(smoke) await smokeTest();
 }
 async function smokeTest() {

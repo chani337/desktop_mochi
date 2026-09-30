@@ -27,12 +27,12 @@ test('settings backups preserve prior bytes, deduplicate and keep the latest 20'
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-function fixture({ installed = true, backupFails = false, response = 0 } = {}) {
+function fixture({ installed = true, backupFails = false, installFails = false, response = 0 } = {}) {
   const updater = new EventEmitter(), events = [], messages = [], schedules = [];
   updater.checkForUpdates = async () => { events.push('check'); updater.emit('update-not-available'); };
-  updater.quitAndInstall = () => events.push('install');
+  updater.installerPath = 'verified-setup.exe';
   const dialog = { showMessageBox: async options => { messages.push(options); return { response }; } };
-  const setup = setupUpdates({ updater, dialog, installed, version: '2.3.0', backup: () => { events.push('backup'); if (backupFails) throw Error('disk full'); }, schedule: callback => { schedules.push(callback); return {}; }, repeat: callback => { schedules.push(callback); return {}; } });
+  const setup = setupUpdates({ updater, dialog, installed, version: '2.3.0', installUpdate: async installer => { assert.equal(installer,'verified-setup.exe');events.push('install');if(installFails)throw Error('helper failed'); }, backup: () => { events.push('backup'); if (backupFails) throw Error('disk full'); }, schedule: callback => { schedules.push(callback); return {}; }, repeat: callback => { schedules.push(callback); return {}; } });
   return { updater, events, messages, schedules, ...setup };
 }
 test('installed updater checks automatically and manual checks report no update', async () => {
@@ -54,4 +54,17 @@ test('portable copies never auto-install and failed checks can be retried', asyn
   await f.check(true); assert.match(f.messages[0].message, /확인하지/);
   f.updater.checkForUpdates = async () => f.events.push('retried');
   await f.check(true); assert.deepEqual(f.events, ['retried']);
+});
+
+test('helper errors report installation failure, not backup failure, and allow retry', async () => {
+  const f=fixture({installFails:true});f.updater.emit('update-downloaded');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.match(f.messages.at(-1).message,/설치를 시작하지/);
+  await f.check(true);assert.equal(f.events.filter(e=>e==='install').length,2);
+});
+test('repeated update clicks do not launch concurrent installers', async()=>{
+  const f=fixture();f.updater.emit('update-downloaded');
+  await Promise.all([f.check(true),f.check(true)]);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.events.filter(e=>e==='install').length,1);
 });

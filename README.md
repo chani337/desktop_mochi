@@ -8,11 +8,11 @@
 
 산책하는 햄스터, 부드럽게 펼쳐지는 바로가기, 나만의 집중 타이머.
 
-![Version](https://img.shields.io/badge/version-2.4.1-E9B778?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.2-E9B778?style=flat-square)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-242424?style=flat-square&logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-527EE8?style=flat-square)
 
-[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.1.exe)
+[**macOS 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/DesktopCat.zip) · [**Windows 다운로드 ↗**](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.2.exe)
 
 [시작하기](#시작하기) · [내 취향대로 설정](#내-취향대로-설정) · [소스 실행](#소스에서-실행하기) · [업데이트 기록](CHANGELOG.md)
 
@@ -68,9 +68,11 @@
 
 ### Windows
 
+v2.4.2부터 앱 내 업데이트는 **설정 저장·백업 → 업데이트 도우미 준비 → 모찌 자동 종료 → 프로세스 종료 확인 → 설치 → 재실행** 순서로 진행합니다. 도우미를 준비하지 못하면 앱을 종료하지 않아요. 기존 v2.4.1 이하에서 이미 설치 오류가 난 경우, 이번 한 번은 트레이에서 모찌를 종료한 뒤 아래 설치 파일로 업데이트해 주세요. 새 종료 방식은 v2.4.2 설치 후 다음 업데이트부터 사용됩니다.
+
 **Windows 10 / 11 · Intel/AMD 64비트(x64)**
 
-1. [Mochi-Setup-2.4.1.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.1.exe)
+1. [Mochi-Setup-2.4.2.exe 다운로드](https://github.com/chani337/desktop_mochi/releases/latest/download/Mochi-Setup-2.4.2.exe)
 2. 기존 모찌가 실행 중이면 트레이 메뉴에서 **종료**합니다.
 3. 설치 파일을 실행하고 안내에 따라 설치한 뒤 모찌를 실행합니다.
 
